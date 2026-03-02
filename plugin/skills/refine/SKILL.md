@@ -1,6 +1,5 @@
 ---
 description: Refine intent or unit specs mid-construction without losing progress
-disable-model-invocation: true
 argument-hint: "[unit-slug]"
 ---
 

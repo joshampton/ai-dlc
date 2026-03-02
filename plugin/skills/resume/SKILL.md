@@ -1,6 +1,5 @@
 ---
 description: Resume work on an existing AI-DLC intent when ephemeral state is lost
-disable-model-invocation: true
 argument-hint: "[intent-slug]"
 ---
 
