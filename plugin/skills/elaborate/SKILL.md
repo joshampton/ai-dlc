@@ -7,6 +7,7 @@ allowed-tools:
   - Grep
   - Bash
   - Task
+  - Skill
   - WebSearch
   - WebFetch
   - AskUserQuestion
@@ -258,6 +259,7 @@ DISCOVERY_DIR=".ai-dlc/${INTENT_SLUG}"
 DISCOVERY_FILE="${DISCOVERY_DIR}/discovery.md"
 
 mkdir -p "$DISCOVERY_DIR"
+mkdir -p "$DISCOVERY_DIR/.briefs"
 
 # Initialize discovery.md with frontmatter header
 cat > "$DISCOVERY_FILE" << 'DISCOVERY_EOF'
@@ -287,271 +289,57 @@ This ensures:
 
 ---
 
-## Phase 2.5: Domain Discovery & Technical Exploration
+## Phase 2.5: Domain Discovery & Technical Exploration (Delegated)
 
-**This phase is mandatory.** Before defining success criteria or decomposing into units, you MUST deeply understand the technical landscape. Shallow understanding here causes builders to build the wrong thing.
+**This phase is mandatory.** Domain discovery runs in a forked subagent to keep the main context lean. The subagent performs deep technical exploration autonomously, writing all findings to `discovery.md` on disk.
 
-### Greenfield Adaptation
-
-**Gate exploration based on project maturity** (detected in Phase 0):
-
-- **Greenfield** (`PROJECT_MATURITY=greenfield`):
-  - **Skip** items 2 (Existing Codebases) and 5 (Existing Implementations) below — there is no codebase to explore. Do NOT spawn Explore subagents for codebase research.
-  - **Keep** items 1 (APIs/Schemas), 3 (Data Sources), 4 (Domain Model — from user input + external research), 6 (External Docs/Libraries), 7 (Providers).
-  - Focus domain discovery on external research, API introspection, and user input rather than codebase analysis.
-- **Early** (`PROJECT_MATURITY=early`):
-  - Use `Glob` and `Read` directly instead of Explore subagents — the codebase is small enough to read directly without subagent overhead.
-  - All items apply, but codebase exploration should be lightweight.
-- **Established** (`PROJECT_MATURITY=established`):
-  - Full exploration as described below. Use Explore subagents for deep codebase research.
-
-### What to Explore
-
-Based on what the user described in Phase 2, identify every relevant technical surface and explore it thoroughly. Use ALL available research tools — codebase exploration, API introspection, web searches, and documentation fetching:
-
-1. **APIs and Schemas**: If the intent involves an API, query it. Run introspection queries. Read the actual schema. Map every type, field, query, mutation, and subscription. Don't guess what data is available — verify it.
-
-2. **Existing Codebases** *(skip for greenfield)*: If the intent builds on or integrates with existing code, explore it via Explore subagents (or `Glob`/`Read` for early-maturity projects). Have them find relevant files, read source code, and report back on existing patterns, conventions, and architecture.
-
-3. **Data Sources**: If the intent involves data, understand where it lives. Query for real sample data. Understand what fields are populated, what's empty, what's missing. Identify gaps between what's available and what's needed.
-
-4. **Domain Model**: From your exploration, build a domain model — the key entities, their relationships, and their lifecycle. This is not a database schema; it's a conceptual map of the problem space.
-
-5. **Existing Implementations** *(skip for greenfield)*: If there are related features, similar tools, or reference implementations, read them. Understand what already exists so you don't build duplicates or miss integration points.
-
-6. **External Documentation and Libraries**: Use `WebSearch` and `WebFetch` to research relevant libraries, frameworks, APIs, standards, or prior art. If the intent involves a third-party system, find its documentation and understand its capabilities. If the intent involves a design pattern or technique, research best practices and common pitfalls.
-
-7. **Configured Providers**: If providers are configured in `.ai-dlc/settings.yml` or discovered via MCP:
-   - **Spec providers** (Notion, Confluence, Google Docs): Search for requirements docs, PRDs, or technical specs related to the intent
-   - **Ticketing providers** (Jira, Linear): Search for existing tickets, epics, or stories that relate to or duplicate this work
-   - **Design providers** (Figma, Sketch, Adobe XD): Delegate to design analysis subagents (see item 4 in "How to Explore" below) to avoid flooding your context with design data. **Important:** Designers often annotate mockups with callouts, arrows, measurement labels, sticky notes, and descriptive text that convey UX behavior or implementation details. These annotations are **guidance, not part of the design itself** — extract the guidance (interaction notes, spacing rules, state descriptions, edge cases) and incorporate it into unit specs, but do not treat annotation visuals as UI elements to build.
-   - **Comms providers** (Slack, Teams): Search for relevant discussions or decisions in channels
-   Use `ToolSearch` to discover available MCP tools matching provider types, then use read-only MCP tools for research.
-
-### How to Explore
-
-Use every research tool available. Spawn multiple explorations in parallel for independent concerns:
-
-1. **Subagents for deep codebase/API exploration** *(established projects only)*: Use `Task` with `subagent_type: "Explore"` for multi-step research that requires reading many files, querying APIs, and synthesizing findings. **If greenfield: do NOT spawn Explore subagents for codebase research — there is no codebase to explore.** If early: use `Glob`/`Read` directly instead of Explore subagents.
-
-```
-Task({
-  description: "Explore {specific system}",
-  subagent_type: "Explore",
-  prompt: "I need to deeply understand {system}. Read source code, query APIs, map the data model. Report back with: every entity and its fields, every query/endpoint available, sample data showing what's actually populated, and any gaps or limitations discovered."
-})
-```
-
-2. **MCP tools for domain knowledge**: Use `ToolSearch` to discover available MCP tools, then use read-only MCP tools for domain research. Examples:
-   - Repository documentation (DeepWiki): `mcp__*__read_wiki*`, `mcp__*__ask_question`
-   - Library docs (Context7): `mcp__*__resolve*`, `mcp__*__query*`
-   - Project memory (han): `mcp__*__memory`
-   - Any other MCP servers available in the environment
-   - Provider MCP tools: If providers are configured, use their MCP tools for research (e.g., `mcp__*jira*__search*` for Jira tickets, `mcp__*notion*__search*` for Notion pages)
-
-3. **Web research for external context**: Use `WebSearch` for library docs, design patterns, API references, prior art. Use `WebFetch` to read specific documentation pages.
-
-4. **Design analysis subagents**: If a design provider is configured, delegate design analysis to subagents to keep your context lean:
+### Step 1: Load provider config
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 PROVIDERS=$(load_providers)
-DESIGN_TYPE=$(echo "$PROVIDERS" | jq -r '.design.type // empty')
 ```
 
-If `DESIGN_TYPE` is set, spawn a `general-purpose` subagent (NOT `Explore` — it needs MCP tool access via `ToolSearch`) for each design file:
+### Step 2: Write discovery brief
 
-```
-Task({
-  description: "Analyze design: {file name}",
-  subagent_type: "general-purpose",
-  prompt: "Analyze a design file for AI-DLC elaboration.
+Serialize current state into the brief file. Include ALL context the subagent needs — it has no access to your conversation history.
 
-    ## Instructions
-    1. Use ToolSearch to discover design MCP tools (e.g., 'figma', 'sketch', 'design')
-    2. Use discovered tools to fetch design metadata, screenshots, and component trees
-    3. Extract and return ONLY a structured summary:
-       - Component hierarchy (parent/child tree of design elements)
-       - Design tokens: colors (hex values), spacing values, typography (font families, sizes, weights)
-       - Interactions and states (hover, active, disabled, error states)
-       - Annotations and designer notes (text callouts, sticky notes, measurement labels)
+Write `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover.md`:
 
-    ## CRITICAL
-    - Return structured text ONLY — no raw screenshots or binary data in your response
-    - Focus on information builders need to implement the design accurately
-    - Note any ambiguities or missing states that builders should ask about
+```markdown
+---
+intent_slug: {INTENT_SLUG}
+worktree_path: {absolute path to intent worktree}
+project_maturity: {PROJECT_MATURITY}
+provider_config: {JSON of PROVIDERS object}
+---
 
-    ## Design File
-    {design file URL or identifier}"
-})
-```
+# Intent Description
 
-Spawn one subagent per design file, in parallel with codebase Explore agents. When results return:
-- Share key findings with the user (component structure, notable design decisions)
-- Append to `discovery.md` under `## Design Analysis: {file name}`
-- If no design MCP tools are discoverable, the subagent reports unavailability — log a warning and continue without design analysis
+{The user's description of what they want to build, from Phase 1}
 
-5. **UI Mockups**: If the intent involves user-facing interfaces (frontend, CLI, TUI, etc.), generate mockups for every distinct screen or view. This step is **mandatory** for any intent with a UI component — it serves different purposes depending on whether designs exist:
+## Clarification Answers
 
-   - **Designs exist** (item 4 returned design analysis): Translate the design analysis into mockups that demonstrate your understanding of the designs. This is *verification* — the user confirms that you correctly interpreted the designer's intent before builders act on it. Misunderstanding a design is expensive; catching it here is cheap.
-   - **No designs exist**: Generate mockups collaboratively with the user as *pre-build visual design*. This is where layout, information hierarchy, and interaction flow get decided. Without this step, builders guess — and they guess wrong. This applies regardless of whether a design provider is configured — having a Figma account doesn't mean designs exist yet. In AI-DLC workflows, design may come later as its own unit with `discipline: design`.
+{All Q&A from Phase 2 — every question asked and the user's response}
 
-   #### Mockup Format
+## Discovery File Path
 
-   Read the mockup format from settings (default: `ascii`):
-   ```bash
-   source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-   REPO_SETTINGS=$(load_repo_settings)
-   MOCKUP_FORMAT=$(echo "$REPO_SETTINGS" | jq -r '.mockup_format // "ascii"')
-   ```
-
-   - **`ascii`** (default): Text-based wireframes rendered in markdown code blocks. Inline in `discovery.md`. Works everywhere, no tooling needed, visible in any terminal or editor.
-   - **`html`**: Self-contained HTML files written to `.ai-dlc/{intent-slug}/mockups/{view-slug}.html`. Use semantic HTML with inline CSS — no external dependencies. Each file should be viewable by opening it directly in a browser. Reference the file path in `discovery.md` instead of inlining the mockup.
-
-   #### Per-View Mockup Process
-
-   For each distinct screen or view identified in the domain model:
-   - Create a mockup showing layout structure, key UI elements, and data placement
-   - Annotate with interaction notes (what happens on click, hover, submit, error states)
-   - Show which domain entities map to which UI regions
-   - If working from designs: note where your interpretation might diverge from the source
-
-   Present mockups to the user with `AskUserQuestion`:
-   ```json
-   {
-     "questions": [{
-       "question": "Does this mockup capture the right layout and information hierarchy for {view name}?",
-       "header": "Mockup",
-       "options": [
-         {"label": "Looks right", "description": "Layout and information hierarchy are correct"},
-         {"label": "Wrong layout", "description": "The arrangement of elements needs changes"},
-         {"label": "Missing elements", "description": "Important UI elements are not shown"},
-         {"label": "Wrong data", "description": "The data shown doesn't match what I expect"}
-       ],
-       "multiSelect": true
-     }]
-   }
-   ```
-
-   Iterate on mockups until the user confirms. Then persist:
-
-   **For `ascii` format** — append to `discovery.md`:
-   ```bash
-   cat >> "$DISCOVERY_FILE" << 'EOF'
-
-   ## UI Mockup: {View Name}
-
-   **Confirmed:** {ISO timestamp}
-   **Source:** {design provider analysis | collaborative}
-
-   ### Layout
-   ```
-   {ASCII mockup}
-   ```
-
-   ### Interactions
-   - {element}: {behavior on click/hover/submit}
-   - {element}: {error states, loading states}
-
-   ### Data Mapping
-   - {UI region} ← {domain entity}.{field}
-
-   EOF
-   ```
-
-   **For `html` format** — write HTML file and reference in `discovery.md`:
-   ```bash
-   MOCKUP_DIR=".ai-dlc/${INTENT_SLUG}/mockups"
-   mkdir -p "$MOCKUP_DIR"
-   cat > "${MOCKUP_DIR}/{view-slug}.html" << 'HTMLEOF'
-   <!DOCTYPE html>
-   <html lang="en">
-   <head><meta charset="UTF-8"><title>{View Name} — Mockup</title>
-   <style>/* inline CSS — no external deps */</style>
-   </head>
-   <body>
-   {semantic HTML mockup with inline styles}
-   </body>
-   </html>
-   HTMLEOF
-
-   # Reference in discovery.md
-   cat >> "$DISCOVERY_FILE" << EOF
-
-   ## UI Mockup: {View Name}
-
-   **Confirmed:** {ISO timestamp}
-   **Source:** {design provider analysis | collaborative}
-   **File:** \`.ai-dlc/${INTENT_SLUG}/mockups/{view-slug}.html\`
-
-   ### Interactions
-   - {element}: {behavior on click/hover/submit}
-   - {element}: {error states, loading states}
-
-   ### Data Mapping
-   - {UI region} ← {domain entity}.{field}
-
-   EOF
-   ```
-
-   **Skip this step only if:** the intent has no user-facing interface (pure backend, API, data pipeline, infrastructure, etc.).
-
-**Spawn multiple research paths in parallel.** Don't serialize explorations that are independent — launch all of them at once and synthesize when results return.
-
-If a VCS MCP is available (e.g., GitHub MCP), use it for code browsing alongside or instead of local file tools.
-
-### Communicate Findings as You Go
-
-**Do not disappear into research and come back with a wall of text.** The user is your collaborator, not a reviewer. As you explore:
-
-- **Share what you're finding** in real-time. When a research subagent returns results, summarize the key findings to the user before launching the next exploration. Let them see your understanding forming.
-- **Surface surprises and ambiguities immediately.** If something doesn't match what the user described, or if you discover a gap or limitation, tell the user right away. Don't wait until the domain model presentation.
-- **Ask clarifying questions when discoveries raise new questions.** If you find that an API has 23 queries but you're not sure which ones are relevant, ask. If you find two possible data sources for the same information, ask which one to use.
-- **Check your mental model incrementally.** Don't wait until the end to validate everything at once. After each major finding, briefly confirm: "I found X — does that match your understanding?" This catches misunderstandings early.
-
-The goal is a **conversation**, not a research report. The user has domain knowledge you don't have. They can correct your understanding in seconds if you surface it, but they can't fix what they can't see.
-
-### Persist Findings to Discovery Log
-
-After each significant finding (API schema mapped, codebase pattern identified, design analyzed, external research completed), **append a section to `discovery.md`** using `cat >>`. This offloads detailed findings from context to disk, keeping your context window lean while preserving full details for builders.
-
-```bash
-DISCOVERY_FILE=".ai-dlc/${INTENT_SLUG}/discovery.md"
-
-cat >> "$DISCOVERY_FILE" << 'EOF'
-
-## {Section Type}: {Name}
-
-**Discovered:** {ISO timestamp}
-
-### Findings
-{Structured findings — entities, fields, patterns, constraints, etc.}
-
-### Key Observations
-- {Important insight 1}
-- {Important insight 2}
-
-### Gaps / Concerns
-- {Any gap, limitation, or open question}
-
-EOF
+{absolute path to discovery.md}
 ```
 
-**Use standardized section headers** so builders can quickly scan the file:
-- `## API Schema: {name}` — For API introspection results (types, fields, queries, mutations)
-- `## Codebase Pattern: {area}` — For architecture patterns discovered in existing code
-- `## Design Analysis: {file}` — For design file findings (components, tokens, interactions)
-- `## External Research: {topic}` — For web research, library docs, prior art
-- `## Data Source: {name}` — For data source exploration (what's available, what's missing)
-- `## Provider Context: {type}` — For ticketing, spec, or comms provider findings
-- `## UI Mockup: {view}` — ASCII mockups of user-facing views with interaction notes and data mapping
-- `## Architecture Decision: {topic}` — For greenfield/early projects: key architecture choices (frameworks, patterns, structure)
-- `## Technology Choice: {name}` — For greenfield/early projects: technology selection rationale
-- `## Reference Implementation: {name}` — For greenfield/early projects: external reference implementations or prior art informing the design
+### Step 3: Invoke discovery subagent
 
-**After appending to `discovery.md`, keep only a brief summary in your context** — the full details are safely on disk and will be available to builders. This is the key benefit: your context stays lean for continued exploration while nothing is lost.
+```
+Skill("elaborate-discover", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-discover.md")
+```
 
-**CRITICAL**: Do not summarize or skip this phase. The exploration results directly determine whether the spec is accurate. If you explore a GraphQL API, report every type. If you read source code, report the actual architecture, not your guess about it.
+### Step 4: Read results
+
+Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover-results.md`.
+
+- Parse the YAML frontmatter `status` field
+- If `status: error` — report the `error_message` to the user and discuss how to proceed
+- If `status: success` — read the domain model summary, key findings, and open questions from the results body
 
 ### Present Domain Model to User
 
@@ -868,11 +656,11 @@ For each cross-cutting concern identified, decide how to handle it using `AskUse
 
 ---
 
-## Phase 5.75: Spec Validation Gate
+## Phase 5.75: Spec Alignment Gate
 
-**This is the quality gate that prevents shallow specs from reaching construction.**
+**This is a high-level alignment check before writing artifacts.** The goal is to confirm the overall direction — intent, unit breakdown, and scope — before investing effort in writing detailed unit specs. Detailed per-unit review happens in Phase 6 step 3.
 
-Before writing any artifacts, present the **complete elaboration summary** to the user:
+Present the **elaboration summary** to the user:
 
 ```markdown
 ## Elaboration Summary
@@ -889,10 +677,9 @@ Before writing any artifacts, present the **complete elaboration summary** to th
 ### Units
 For each unit:
 - **unit-NN-{slug}**: {one-line description}
-  - Entities: {which domain entities}
-  - Data: {which data sources/queries}
+  - Discipline: {discipline}
+  - Depends on: {dependencies or "none"}
   - Builds: {specific components/modules/endpoints}
-  - Criteria: {count} success criteria
 
 ### Workflow
 {workflow name}
@@ -902,11 +689,11 @@ Then ask with `AskUserQuestion`:
 ```json
 {
   "questions": [{
-    "question": "Is this spec detailed enough that a developer with NO prior context about this domain could build the right thing? (If a builder could misinterpret any unit and build something wrong, answer 'Not detailed enough')",
-    "header": "Spec Quality",
+    "question": "Does this intent and unit breakdown generally align with what you want built? (You'll review each unit in detail when we write the specs.)",
+    "header": "Alignment",
     "options": [
-      {"label": "Yes, detailed enough", "description": "Every unit is unambiguous — proceed to write artifacts"},
-      {"label": "Not detailed enough", "description": "Some units are vague or could be misinterpreted — need more detail"},
+      {"label": "Looks right", "description": "The intent, units, and scope are correct — proceed to write detailed specs"},
+      {"label": "Wrong breakdown", "description": "The unit decomposition needs changes — wrong boundaries, missing units, or wrong scope"},
       {"label": "Wrong direction", "description": "The overall approach needs rethinking"}
     ],
     "multiSelect": false
@@ -914,11 +701,9 @@ Then ask with `AskUserQuestion`:
 }
 ```
 
-- **"Yes, detailed enough"**: Proceed to Phase 6
-- **"Not detailed enough"**: Ask which units need more detail, then return to Phase 5 for those units. Do NOT proceed until every unit is unambiguous.
+- **"Looks right"**: Proceed to Phase 6
+- **"Wrong breakdown"**: Discuss what needs to change, revise units in Phase 5, and re-present
 - **"Wrong direction"**: Discuss with user, potentially return to Phase 2 or 2.5
-
-**Do NOT skip this gate.** This is the single most important quality check in the entire elaboration process. A vague spec produces wrong implementations. A precise spec produces correct ones.
 
 ---
 
@@ -1098,7 +883,11 @@ problem space.}
 {Relevant background, constraints, decisions made during elaboration}
 ```
 
-### 3. Write `unit-NN-{slug}.md` for each unit:
+### 3. Write and review each `unit-NN-{slug}.md` individually:
+
+**Process each unit one at a time.** Write the file, present it for review, iterate until approved, then move to the next unit. Do NOT batch-write all units.
+
+#### Unit file template:
 ```markdown
 ---
 status: pending
@@ -1153,6 +942,53 @@ misinterpret what to build.}
 - `documentation` → `do-technical-documentation` agents
 - `devops` → infrastructure/deployment agents
 
+#### Per-unit review loop:
+
+For each unit (in dependency order — units with no `depends_on` first):
+
+**Step A — Write the unit file** to `.ai-dlc/{intent-slug}/unit-NN-{slug}.md`.
+
+**Step B — Present the full unit for review.** Display the **complete file contents** — every line of the markdown, not a summary. Use a fenced code block so the user sees exactly what will be committed:
+
+```
+### Unit NN: {Unit Title}
+
+```markdown
+{full contents of unit-NN-{slug}.md — frontmatter and body, every line}
+```
+```
+
+**Step C — If the unit has `discipline: frontend`, open its wireframe in the browser** so the user can review the visual alongside the spec:
+
+```bash
+# Only for frontend units — open the wireframe if it exists
+WIREFRAME=".ai-dlc/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html"
+if [ -f "$WIREFRAME" ]; then
+  open "$WIREFRAME"  # macOS; use xdg-open on Linux
+fi
+```
+
+**Step D — Ask for approval** using `AskUserQuestion`:
+
+```json
+{
+  "questions": [{
+    "question": "Does this unit spec give a builder enough detail to build the right thing?",
+    "header": "Unit NN",
+    "options": [
+      {"label": "Approved", "description": "This unit is clear and complete — move to the next unit"},
+      {"label": "Needs changes", "description": "Some sections need revision — I'll describe what to adjust"},
+      {"label": "Rethink unit", "description": "This unit's scope or approach needs fundamental rework"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+- **Approved**: Move to the next unit.
+- **Needs changes**: Discuss feedback, update the unit file, re-display the full contents, and re-ask. Loop until approved.
+- **Rethink unit**: Discuss the scope or approach, potentially split/merge/redesign the unit, rewrite the file, and re-present.
+
 ### 4. Save intent slug to han keep:
 
 ```bash
@@ -1181,11 +1017,11 @@ This ensures builders can pull the intent branch when working remotely. Note in 
 
 ---
 
-## Phase 6.25: Generate Frontend Wireframes
+## Phase 6.25: Generate Frontend Wireframes (Delegated)
 
 **Skip this phase entirely if no units have `discipline: frontend` in their frontmatter.**
 
-For each frontend unit, generate a low-fidelity HTML wireframe that gives product a concrete visual to react to before construction begins. These wireframes are a spec tool, not a design tool — high-fidelity design happens during construction.
+Wireframe generation runs in a forked subagent. The subagent generates low-fidelity HTML wireframes for all frontend units, updates unit frontmatter, and commits the artifacts.
 
 ### Step 1: Identify frontend units
 
@@ -1193,7 +1029,7 @@ Scan all `unit-*.md` files in `.ai-dlc/{intent-slug}/`. Collect units where fron
 
 If no frontend units exist, skip to Phase 6.5.
 
-### Step 2: Check for design provider context
+### Step 2: Load design provider config
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
@@ -1201,138 +1037,51 @@ PROVIDERS=$(load_providers)
 DESIGN_TYPE=$(echo "$PROVIDERS" | jq -r '.design.type // empty')
 ```
 
-If a design provider is configured (e.g., Figma), reference component names from the design system in HTML comments (e.g., `<!-- DS: ButtonPrimary -->`) but maintain low-fidelity wireframe aesthetic. Do NOT import actual design system styles.
+### Step 3: Write wireframes brief
 
-If design mockups exist, download/export assets when possible for analysis. **Distinguish annotations from design elements** — designers annotate mockups with callouts, arrows, measurement labels, and descriptive text that describe UX behavior and implementation detail. Extract this guidance into the unit specs (interaction notes, edge cases, state descriptions) but do not render annotations as wireframe elements.
+Write `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes.md`:
 
-### Step 3: Create mockups directory
+```markdown
+---
+intent_slug: {INTENT_SLUG}
+worktree_path: {absolute path to intent worktree}
+intent_title: {Intent Title from intent.md}
+design_provider_type: {DESIGN_TYPE or empty}
+---
 
-```bash
-mkdir -p ".ai-dlc/${INTENT_SLUG}/mockups"
+# Frontend Units
+
+{For each frontend unit, include:}
+
+## {unit filename}
+
+**File:** {unit filename}.md
+**Description:** {unit description from body}
+**Domain Entities:** {entities from unit spec}
+**Technical Spec:** {technical specification from unit body}
+
+# Design Context
+
+{Design analysis findings from discovery.md, if any — grep for "## Design Analysis" sections}
+
+# Domain Model Reference
+
+{Abbreviated domain model from intent.md}
 ```
 
-### Step 4: Generate wireframe HTML per frontend unit
+### Step 4: Invoke wireframes subagent
 
-For each frontend unit, create a self-contained HTML file at:
-`.ai-dlc/{intent-slug}/mockups/unit-{NN}-{slug}-wireframe.html`
-
-Where `{NN}` is the zero-padded unit number and `{slug}` is the unit filename slug.
-
-#### Wireframe Style Reference
-
-All wireframes MUST use this exact visual style — a gray/white low-fidelity aesthetic with no brand colors, no custom fonts, and no JavaScript:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wireframe: {Unit Title}</title>
-<style>
-  /* === BASE === */
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; padding: 40px 20px; }
-  h1 { text-align: center; font-size: 18px; color: #666; margin-bottom: 8px; }
-  .subtitle { text-align: center; font-size: 13px; color: #999; margin-bottom: 40px; }
-
-  /* === LAYOUT === */
-  .flow { display: flex; gap: 32px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
-  .arrow { display: flex; align-items: center; font-size: 28px; color: #bbb; padding-top: 160px; }
-
-  /* === SCREEN CARDS === */
-  .screen { width: 300px; background: #fff; border: 2px solid #ddd; border-radius: 12px; overflow: hidden; }
-  .screen-header {
-    background: #e8e8e8; padding: 12px 16px; font-size: 11px; font-weight: 600;
-    color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #ddd;
-  }
-  .screen-body { padding: 24px 20px; }
-  .screen-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-  .screen-desc { font-size: 13px; color: #888; margin-bottom: 24px; line-height: 1.4; }
-
-  /* === FORM FIELDS (dashed borders) === */
-  .field { border: 2px dashed #ccc; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; color: #aaa; }
-  .field.filled { border-style: solid; color: #333; }
-
-  /* === BUTTONS === */
-  .btn {
-    width: 100%; padding: 14px; border-radius: 8px; border: none;
-    font-size: 15px; font-weight: 600; cursor: default; margin-bottom: 8px; text-align: center;
-  }
-  .btn-primary { background: #888; color: #fff; }
-  .btn-secondary { background: #f0f0f0; color: #666; }
-  .btn-text { background: none; color: #666; font-size: 13px; }
-
-  /* === DIVIDERS === */
-  .divider { text-align: center; font-size: 12px; color: #bbb; margin: 16px 0; position: relative; }
-  .divider::before, .divider::after {
-    content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background: #e0e0e0;
-  }
-  .divider::before { left: 0; }
-  .divider::after { right: 0; }
-
-  /* === PLACEHOLDER ELEMENTS === */
-  .placeholder { background: #e0e0e0; border-radius: 8px; height: 40px; margin-bottom: 12px; }
-  .placeholder.tall { height: 120px; }
-  .placeholder.avatar { width: 36px; height: 36px; border-radius: 50%; display: inline-block; }
-
-  /* === FLOW NOTES (yellow callout) === */
-  .note {
-    background: #fffde7; border: 1px solid #fff176; border-radius: 6px;
-    padding: 10px 12px; font-size: 12px; color: #666; margin-top: 16px; line-height: 1.4;
-  }
-  .note strong { color: #333; }
-
-  /* === COPY REVIEW ANNOTATIONS (orange) === */
-  .copy-note { font-size: 11px; color: #e65100; font-style: italic; margin-top: 4px; }
-
-  /* === LIST/CARD ITEMS === */
-  .card {
-    border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px 14px;
-    margin-bottom: 8px; display: flex; align-items: center; gap: 12px;
-  }
-</style>
-</head>
-<body>
-
-<h1>{Intent Title}</h1>
-<p class="subtitle">Wireframe &mdash; Unit: {Unit Title} &mdash; AI-DLC Elaboration Artifact</p>
-
-<div class="flow">
-  <!-- Build screens here -->
-</div>
-
-</body>
-</html>
+```
+Skill("elaborate-wireframes", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-wireframes.md")
 ```
 
-#### What to include
+### Step 5: Read results
 
-- **Screens**: One `.screen` card per distinct view or state described in the unit. Use `.screen-header` for screen identification (e.g., "Screen 1 — Login") and `.screen-body` for content.
-- **User flows**: Use `.arrow` elements (`→`) between screens to show navigation flow. Wrap screens and arrows in `.flow` container.
-- **Form fields**: Use `.field` with dashed borders for inputs. Use `.field.filled` for pre-filled example states.
-- **Buttons**: Use `.btn-primary` for main actions, `.btn-secondary` for alternatives, `.btn-text` for tertiary/link actions. Keep buttons gray (`#888`) — no brand colors.
-- **Placeholder copy**: Write realistic placeholder text for all headings, descriptions, labels, and button text. Mark any copy needing product review with `<div class="copy-note">^ Copy: needs product review</div>`.
-- **Flow notes**: Use `.note` callouts to explain behavior, transitions, conditional logic, and edge cases (e.g., "Auto-submits when all 6 digits entered").
-- **States**: Show key states (empty, filled, error, success) as separate screens or annotate with flow notes.
-- **Placeholders**: Use `.placeholder` for images, avatars, or content areas that don't need detail.
+Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
 
-#### What to exclude
-
-- Brand colors — use only grays (#888, #666, #aaa, #ccc, #ddd, #e0e0e0, #f0f0f0, #f5f5f5) and white
-- Custom fonts — use only `system-ui, sans-serif`
-- Icons — describe in text or use unicode characters
-- JavaScript — no interactivity, no animations
-- Responsive breakpoints — fixed 300px screen cards only
-- High-fidelity design — no shadows, gradients, or brand styling
-
-### Step 5: Add wireframe field to unit frontmatter
-
-For each frontend unit that received a wireframe, add the `wireframe:` field to its frontmatter pointing to the relative mockup path:
-
-```yaml
-wireframe: mockups/unit-{NN}-{slug}-wireframe.html
-```
+- If `status: skipped` — no frontend units found, proceed to Phase 6.5
+- If `status: error` — report the error to the user and discuss how to proceed
+- If `status: success` — list the generated wireframes for the user
 
 ### Step 6: Product review gate
 
@@ -1353,25 +1102,17 @@ Present all generated wireframes to product for review using `AskUserQuestion`:
 }
 ```
 
-- **Approved**: Proceed to Step 7.
-- **Needs revision**: Discuss feedback, update the wireframe HTML files, and re-present for review. Loop until approved.
+- **Approved**: Proceed to Phase 6.5.
+- **Needs revision**: Discuss feedback, update the wireframe HTML files directly, and re-present for review. Loop until approved.
 - **Skip wireframes**: Delete the `mockups/` directory, remove `wireframe:` fields from unit frontmatter, and proceed to Phase 6.5.
-
-### Step 7: Commit wireframe artifacts
-
-```bash
-git add .ai-dlc/${INTENT_SLUG}/mockups/
-git add .ai-dlc/${INTENT_SLUG}/unit-*.md
-git commit -m "elaborate: add wireframes for ${intentSlug} frontend units"
-```
 
 ---
 
-## Phase 6.5: Sync to Ticketing Provider
+## Phase 6.5 + 6.75: Sync to Ticketing Provider (Delegated)
 
-If a ticketing provider is configured and MCP tools are available, you **MUST** complete all steps below. Phase 6.75 will validate that all tickets were created — you cannot proceed to handoff with missing tickets.
+Ticket sync (epic creation, ticket creation, DAG linking, validation) runs in a forked subagent. The subagent handles the full workflow including validation and retry.
 
-Before creating tickets, load provider config:
+### Step 1: Load ticketing config
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
@@ -1380,154 +1121,60 @@ TICKETING_TYPE=$(echo "$PROVIDERS" | jq -r '.ticketing.type // empty')
 TICKETING_CONFIG=$(echo "$PROVIDERS" | jq -c '.ticketing.config // {}')
 ```
 
-Read the provider config schema for reference: `${CLAUDE_PLUGIN_ROOT}/schemas/providers/{TICKETING_TYPE}.schema.json`
+If `TICKETING_TYPE` is empty, skip this phase entirely and proceed to Phase 7.
 
-1. **Epic handling**:
-   - If `epic` field in intent.md frontmatter is already populated (provided by product), use that existing epic — do not create a new one
-   - If `epic` is empty, create an epic from the intent using the ticketing MCP tools (e.g., `mcp__*jira*__create*`, `gh issue create`), then store the epic key in intent.md frontmatter
-   - Epic title: intent title
-   - Epic description (multiline markdown, NOT escaped `\n`):
-     ```markdown
-     ## Problem
+### Step 2: Write ticket sync brief
 
-     {problem statement from intent.md}
+Read the intent.md and all unit files to gather the data the subagent needs. Write `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md`:
 
-     ## Solution
-
-     {solution description from intent.md}
-
-     ## Units
-
-     {numbered list of unit titles from the decomposition}
-     1. {unit-01 title}
-     2. {unit-02 title}
-     ...
-     ```
-
-2. **Create tickets** per unit, using config fields:
-   - Title: unit title (from unit filename slug, humanized)
-   - Description: see **Ticket Description Format** below
-   - Issue type: `config.issue_type` (fall back to "Task")
-   - Issue type ID: `config.issue_type_id` (overrides name lookup if set)
-   - Labels: `config.labels[unit.discipline]` (if configured, apply discipline-mapped labels)
-   - Story points: estimate and set if `config.story_points` = "required"
-   - Details: include additional content per `config.details` requirements
-
-   ### Ticket Description Format
-
-   **CRITICAL**: Always pass description strings with real newlines (multiline), never escaped `\n` literals. MCP tool description fields accept markdown — use it.
-
-   Build the description from the unit file content using this structure:
-
-   ```markdown
-   ## Overview
-
-   {unit description from the unit file body — the paragraph(s) after the frontmatter heading}
-
-   ## Completion Criteria
-
-   - [ ] {criterion 1}
-   - [ ] {criterion 2}
-   - [ ] {criterion 3}
-
-   ## Dependencies
-
-   {if unit has depends_on, list them here with their ticket keys if known}
-   - Blocked by: {dependency unit title} ({ticket key})
-
-   {if unit has no dependencies}
-   None — this unit can start immediately.
-
-   ## Wireframe
-
-   {if unit has `wireframe:` frontmatter field populated}
-   Low-fidelity wireframe available at `.ai-dlc/{intent-slug}/{wireframe-path}`.
-   Shows approved screen structure, flow, and placeholder copy.
-   Apply full visual design during construction.
-
-   {if unit does not have `wireframe:` field — omit this section entirely}
-
-   ## Technical Notes
-
-   {include any implementation guidance, constraints, or architectural notes from the unit file body — omit this section if the unit has no technical detail beyond the criteria}
-   ```
-
-   Omit sections that have no content (e.g., skip "Dependencies" if none, skip "Technical Notes" if the unit file has no implementation detail). The goal is a ticket that gives a developer full context without reading the `.ai-dlc/` files.
-
-   **Every unit ticket MUST be linked to the intent epic** (unless `config.epic_link` is explicitly set to `"none"`). The epic is the single parent that groups all unit work — without this link, tickets are orphaned and invisible to project tracking. This applies regardless of provider: Jira epic links, Linear parent issues, GitHub milestones/tracked-by, GitLab epic associations.
-
-3. **Map DAG to blocked-by** (if `config.issue_links` != "none"):
-   - For each unit's `depends_on`, create blocked-by relationships between the corresponding tickets
-   - Use link type names from `config.link_types` (defaults: "Blocks" / "Is Blocked By")
-   - Example: unit-02 depends on unit-01 → ticket for unit-02 is blocked by ticket for unit-01
-
-4. **Store keys in frontmatter**:
-   - Update intent.md frontmatter: `epic: PROJ-123`
-   - Update each unit frontmatter: `ticket: PROJ-124`
-   - Commit the updated frontmatter:
-   ```bash
-   git add .ai-dlc/
-   git commit -m "elaborate: sync tickets for ${intentSlug}"
-   ```
-
-5. **Graceful degradation**:
-   - If ticketing MCP tools are not available, skip this phase entirely
-   - Log: "Ticketing provider configured but MCP tools not available — skipping ticket creation"
-   - Never block elaboration on ticket creation failure
-
+```markdown
+---
+intent_slug: {INTENT_SLUG}
+worktree_path: {absolute path to intent worktree}
+ticketing_type: {TICKETING_TYPE}
+ticketing_config: {JSON of TICKETING_CONFIG object}
+plugin_root: {CLAUDE_PLUGIN_ROOT}
 ---
 
-## Phase 6.75: Ticket Sync Validation
+# Intent Summary
 
-This phase validates that Phase 6.5 was completed correctly. It runs automatically after Phase 6.5.
+## Problem
+{problem statement from intent.md}
 
-### Step 1: Check if ticketing is configured
+## Solution
+{solution description from intent.md}
 
-```bash
-source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
-PROVIDERS=$(load_providers)
-TICKETING_TYPE=$(echo "$PROVIDERS" | jq -r '.ticketing.type // empty')
+## Epic
+{existing epic key from intent.md frontmatter, or empty}
+
+# Units
+
+{For each unit file, include:}
+
+## {unit filename without .md}
+- **File:** {unit filename}
+- **Title:** {humanized unit title}
+- **Discipline:** {discipline from frontmatter}
+- **Depends On:** {depends_on list from frontmatter}
+- **Description:** {unit description from body}
+- **Success Criteria:**
+  {success criteria list from unit body}
+- **Wireframe:** {wireframe path from frontmatter, if any}
 ```
 
-- If `TICKETING_TYPE` is empty → **skip this phase**, proceed to Phase 7.
+### Step 3: Invoke ticket sync subagent
 
-### Step 2: Verify MCP tools are available
+```
+Skill("elaborate-ticket-sync", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-ticket-sync.md")
+```
 
-Use `ToolSearch` to check for ticketing MCP tools (search for the provider type, e.g., `"jira"`, `"linear"`, `"github issues"`).
+### Step 4: Read results
 
-- If no MCP tools found → log warning: `"Ticketing provider '${TICKETING_TYPE}' configured but MCP tools not available — skipping ticket validation"` → proceed to Phase 7.
+Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
 
-### Step 3: Hard validation (provider + MCP tools available)
-
-Read the intent and unit files and check for populated ticket fields:
-
-1. **Epic check**: Read `intent.md` frontmatter. Check the `epic:` field.
-   - If `epic:` is empty or missing → **FAIL**
-
-2. **Ticket check**: Scan all `unit-*.md` files in the intent directory. Check each file's `ticket:` frontmatter field.
-   - If ANY unit has an empty or missing `ticket:` field → **FAIL**
-
-### On FAIL:
-
-**DO NOT proceed to Phase 7.** Instead:
-
-1. Report exactly what is missing:
-   ```
-   Ticket sync validation failed:
-   - intent.md: epic field is empty
-   - unit-02-auth-middleware.md: ticket field is empty
-   - unit-04-api-routes.md: ticket field is empty
-   ```
-
-2. Loop back to **Phase 6.5** to create the missing tickets/epic.
-
-3. After Phase 6.5 completes, re-run this validation (Phase 6.75).
-
-4. Only proceed to Phase 7 when all `epic:` and `ticket:` fields are populated.
-
-### On PASS:
-
-Log: `"Ticket sync validation passed — all epic and ticket fields populated."` → proceed to Phase 7.
+- If `status: skipped` — ticketing not configured or MCP tools unavailable, proceed to Phase 7
+- If `status: error` — report the errors to the user. If `validation_passed: false`, the subagent already retried. Log the failures and proceed to Phase 7 (never block elaboration on ticket sync failure)
+- If `status: success` — log the epic key and ticket keys, confirm validation passed, proceed to Phase 7
 
 ---
 
