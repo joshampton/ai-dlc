@@ -159,14 +159,20 @@ If no slug provided, or the intent doesn't exist, proceed to Phase 1.
 **Start fresh cleanup:** When the user chooses "Start fresh", remove the intent worktree and its branch (if they exist from a prior elaboration attempt), then clean up any leftover `.ai-dlc/{slug}/` directory:
 
 ```bash
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
-INTENT_WORKTREE="${PROJECT_ROOT}/.ai-dlc/worktrees/${slug}"
+REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${slug}"
 INTENT_BRANCH="ai-dlc/${slug}/main"
 
 # Remove worktree if it exists
 if [ -d "$INTENT_WORKTREE" ]; then
   git worktree remove --force "$INTENT_WORKTREE" 2>/dev/null
 fi
+
+# Remove any unit worktrees for this intent
+for wt in "${REPO_ROOT}/.ai-dlc/worktrees/${slug}-"*; do
+  [ -d "$wt" ] && git worktree remove --force "$wt" 2>/dev/null
+done
+git worktree prune
 
 # Delete the intent branch if it exists
 git branch -D "$INTENT_BRANCH" 2>/dev/null
@@ -221,11 +227,11 @@ Before beginning technical exploration, create the intent worktree and initializ
 You MUST ensure `.ai-dlc/worktrees/` is in `.gitignore` BEFORE creating the worktree. Run this as a **separate Bash command** first:
 
 ```bash
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
-mkdir -p "${PROJECT_ROOT}/.ai-dlc/worktrees"
-if ! grep -q '\.ai-dlc/worktrees/' "${PROJECT_ROOT}/.gitignore" 2>/dev/null; then
-  echo '.ai-dlc/worktrees/' >> "${PROJECT_ROOT}/.gitignore"
-  git add "${PROJECT_ROOT}/.gitignore"
+REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+mkdir -p "${REPO_ROOT}/.ai-dlc/worktrees"
+if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
+  echo '.ai-dlc/worktrees/' >> "${REPO_ROOT}/.gitignore"
+  git add "${REPO_ROOT}/.gitignore"
   git commit -m "chore: gitignore .ai-dlc/worktrees"
 fi
 ```
@@ -236,12 +242,12 @@ Only after confirming the gitignore entry exists:
 
 ```bash
 INTENT_SLUG="{intent-slug}"
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 INTENT_BRANCH="ai-dlc/${INTENT_SLUG}/main"
-INTENT_WORKTREE="${PROJECT_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
+INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}"
 
 # Guard: abort if worktrees dir is not gitignored
-if ! grep -q '\.ai-dlc/worktrees/' "${PROJECT_ROOT}/.gitignore" 2>/dev/null; then
+if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
   echo "ERROR: .ai-dlc/worktrees/ is not in .gitignore. Run Step 1 first." >&2
   exit 1
 fi

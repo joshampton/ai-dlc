@@ -102,7 +102,7 @@ After marking a unit as completed, merge behavior depends on `change_strategy`:
 
 ```bash
 # Load config for merge settings
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
 INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
 CONFIG=$(get_ai_dlc_config "$INTENT_DIR")
@@ -149,7 +149,7 @@ EOF
 )" 2>/dev/null || echo "PR may already exist for $UNIT_BRANCH"
 
   # Clean up unit worktree
-  WORKTREE_PATH="${PROJECT_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   [ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
 
 elif [ "$AUTO_MERGE" = "true" ]; then
@@ -166,7 +166,7 @@ elif [ "$AUTO_MERGE" = "true" ]; then
   fi
 
   # Clean up unit worktree
-  WORKTREE_PATH="${PROJECT_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
+  WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
   [ -d "$WORKTREE_PATH" ] && git worktree remove "$WORKTREE_PATH"
 fi
 ```
@@ -478,7 +478,6 @@ done
 All unit PRs have been created during construction. Review and merge them individually.
 
 To clean up:
-  git worktree remove .ai-dlc/worktrees/{intent-slug}
   /reset
 ```
 
@@ -564,6 +563,5 @@ To create PR manually:
   gh pr create --base ${DEFAULT_BRANCH} --head ai-dlc/{intent-slug}/main
 
 To clean up:
-  git worktree remove .ai-dlc/worktrees/{intent-slug}
   /reset
 ```

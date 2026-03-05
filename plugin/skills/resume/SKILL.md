@@ -115,14 +115,14 @@ starting_hat=$(get_recommended_hat ".ai-dlc/${slug}" "${workflow}")
 **CRITICAL: The orchestrator MUST run in the intent worktree, not the main working directory.**
 
 ```bash
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
 INTENT_BRANCH="ai-dlc/${slug}/main"
-INTENT_WORKTREE="${PROJECT_ROOT}/.ai-dlc/worktrees/${slug}"
+INTENT_WORKTREE="${REPO_ROOT}/.ai-dlc/worktrees/${slug}"
 
-mkdir -p "${PROJECT_ROOT}/.ai-dlc/worktrees"
-if ! grep -q '\.ai-dlc/worktrees/' "${PROJECT_ROOT}/.gitignore" 2>/dev/null; then
-  echo '.ai-dlc/worktrees/' >> "${PROJECT_ROOT}/.gitignore"
-  git add "${PROJECT_ROOT}/.gitignore"
+mkdir -p "${REPO_ROOT}/.ai-dlc/worktrees"
+if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
+  echo '.ai-dlc/worktrees/' >> "${REPO_ROOT}/.gitignore"
+  git add "${REPO_ROOT}/.gitignore"
   git commit -m "chore: gitignore .ai-dlc/worktrees"
 fi
 

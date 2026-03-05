@@ -22,12 +22,12 @@ Clears all AI-DLC state for the current branch. Use this to:
 - Clean up after completing a task
 - Abandon a task that's no longer needed
 
-This only clears AI-DLC state. It does not:
+This clears AI-DLC state and removes worktrees. It does not:
 - Undo code changes
 - Delete branches
 - Revert commits
 
-The work you did is preserved in git. Only the AI-DLC workflow state is cleared.
+The work you did is preserved in git. Only the AI-DLC workflow state and worktrees are cleared.
 
 ## Implementation
 
@@ -89,6 +89,27 @@ TeamDelete()
 
 **Without Agent Teams:** Skip this step entirely. No team exists to clean up.
 
+### Step 1c: Cleanup Worktrees
+
+Remove the intent worktree and any unit worktrees for this intent:
+
+```bash
+INTENT_SLUG=$(han keep load intent-slug --quiet 2>/dev/null || echo "")
+REPO_ROOT=$(git worktree list --porcelain | head -1 | sed 's/^worktree //')
+
+if [ -n "$INTENT_SLUG" ]; then
+  # Remove unit worktrees (pattern: {intent-slug}-{unit-slug})
+  for wt in "${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-"*; do
+    [ -d "$wt" ] && git worktree remove --force "$wt" 2>/dev/null
+  done
+  # Remove intent worktree
+  [ -d "${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}" ] && \
+    git worktree remove --force "${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}" 2>/dev/null
+fi
+
+git worktree prune
+```
+
 ### Step 2: Delete All AI-DLC Keys
 
 ```bash
@@ -112,6 +133,7 @@ Output:
 AI-DLC state cleared.
 
 All iteration data, intent, criteria, and notes have been removed.
+Worktrees cleaned up.
 
 To start a new task, run `/elaborate`.
 ```
