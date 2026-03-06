@@ -11,7 +11,7 @@ import "./globals.css"
 const SITE_URL = "https://ai-dlc.dev"
 const SITE_TITLE = "AI-DLC - AI-Driven Development Lifecycle"
 const SITE_DESCRIPTION =
-	"A methodology for iterative AI-driven development with hat-based workflows"
+	"A methodology for the era of AI-driven software development — built from first principles, not retrofitted from the past"
 
 export const metadata: Metadata = {
 	title: {

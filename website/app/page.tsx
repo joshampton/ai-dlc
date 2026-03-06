@@ -75,9 +75,9 @@ const hats = [
 
 const differentiators = [
 	{
-		title: "Structure Without Overhead",
+		title: "From Assistance to Autonomy",
 		description:
-			"AI-DLC provides just enough structure to keep work focused without adding bureaucratic overhead. Define clear phases, not paperwork.",
+			"AI has evolved from code completion to sustained autonomous reasoning. Development methods need to evolve with it — not retrofit AI into processes designed for a different era.",
 		icon: (
 			<svg
 				className="h-6 w-6"
@@ -90,15 +90,15 @@ const differentiators = [
 					strokeLinecap="round"
 					strokeLinejoin="round"
 					strokeWidth={2}
-					d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+					d="M13 10V3L4 14h7v7l9-11h-7z"
 				/>
 			</svg>
 		),
 	},
 	{
-		title: "AI-Native from Day One",
+		title: "Phases Collapse Into Flow",
 		description:
-			"Built specifically for AI-assisted development. Works seamlessly with Claude Code to structure prompts, track context, and maintain quality.",
+			"Sequential phases — requirements, design, build, test — existed because iteration was expensive. With AI, iteration costs approach zero. AI-DLC embraces continuous flow.",
 		icon: (
 			<svg
 				className="h-6 w-6"
@@ -111,15 +111,15 @@ const differentiators = [
 					strokeLinecap="round"
 					strokeLinejoin="round"
 					strokeWidth={2}
-					d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+					d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
 				/>
 			</svg>
 		),
 	},
 	{
-		title: "Intentional Context Switching",
+		title: "Built From First Principles",
 		description:
-			"Instead of letting context drift, switch \"hats\" deliberately. Both you and your AI understand what mode you're in and what's expected.",
+			"Not a retrofit of Agile or Scrum. AI-DLC is designed for how development actually works when AI is a central collaborator, not just a tool.",
 		icon: (
 			<svg
 				className="h-6 w-6"
@@ -132,7 +132,7 @@ const differentiators = [
 					strokeLinecap="round"
 					strokeLinejoin="round"
 					strokeWidth={2}
-					d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+					d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
 				/>
 			</svg>
 		),
@@ -141,11 +141,35 @@ const differentiators = [
 
 const paths = [
 	{
-		title: "Learn the Concepts",
+		title: "Start Here",
 		description:
-			"Understand the four hats, units of work, and how AI-DLC structures development.",
-		href: "/docs/",
-		cta: "Read the Docs",
+			"Guided onboarding that walks you through concepts, tools, and your first implementation step by step.",
+		href: "/start-here/",
+		cta: "Begin Onboarding",
+		icon: (
+			<svg
+				className="h-8 w-8"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				aria-hidden="true"
+			>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={1.5}
+					d="M9 5l7 7-7 7"
+				/>
+			</svg>
+		),
+		color: "from-blue-500 to-purple-600",
+	},
+	{
+		title: "Read the Paper",
+		description:
+			"The full methodology — evolution of software development, core principles, and production lessons.",
+		href: "/paper/",
+		cta: "Read the Paper",
 		icon: (
 			<svg
 				className="h-8 w-8"
@@ -162,42 +186,12 @@ const paths = [
 				/>
 			</svg>
 		),
-		color: "from-blue-500 to-blue-600",
-	},
-	{
-		title: "Try It Yourself",
-		description:
-			"Use our interactive tools to explore workflows and find the right mode for your task.",
-		href: "/tools/mode-selector/",
-		cta: "Launch Mode Selector",
-		icon: (
-			<svg
-				className="h-8 w-8"
-				fill="none"
-				viewBox="0 0 24 24"
-				stroke="currentColor"
-				aria-hidden="true"
-			>
-				<path
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					strokeWidth={1.5}
-					d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-				/>
-				<path
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					strokeWidth={1.5}
-					d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-				/>
-			</svg>
-		),
 		color: "from-purple-500 to-purple-600",
 	},
 	{
-		title: "Implement Now",
+		title: "Install Now",
 		description:
-			"Install the Claude Code plugin and start using AI-DLC in your projects today.",
+			"Already sold? Install the Claude Code plugin and start using AI-DLC in your projects today.",
 		href: "/docs/installation/",
 		cta: "Install Plugin",
 		icon: (
@@ -248,9 +242,10 @@ export default function Home() {
 								AI-Driven Development Lifecycle
 							</p>
 							<p className="mb-8 text-lg text-gray-600 dark:text-gray-400">
-								A methodology for iterative, high-quality software development
-								with AI. Structure your work with clear phases, switch contexts
-								intentionally, and ship with confidence.
+								Software development has evolved. AI can sustain autonomous
+								reasoning for hours, iterate in seconds, and write production
+								code at scale. Traditional methods weren't built for this.
+								AI-DLC is.
 							</p>
 							<div className="flex flex-col gap-4 sm:flex-row">
 								<Link
@@ -354,10 +349,10 @@ export default function Home() {
 			<section className="border-y border-gray-200 bg-white px-4 py-16 dark:border-gray-800 dark:bg-gray-950">
 				<div className="mx-auto max-w-6xl">
 					<div className="mb-12 text-center">
-						<h2 className="mb-4 text-3xl font-bold">What is AI-DLC?</h2>
+						<h2 className="mb-4 text-3xl font-bold">Why AI-DLC?</h2>
 						<p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-							AI-DLC is a lightweight methodology that brings structure to
-							AI-assisted development without slowing you down.
+							The way software gets built is changing fundamentally. AI-DLC is
+							a methodology designed for this new reality.
 						</p>
 					</div>
 					<div className="grid gap-8 md:grid-cols-3">
@@ -383,10 +378,10 @@ export default function Home() {
 			<section className="px-4 py-16">
 				<div className="mx-auto max-w-6xl">
 					<div className="mb-12 text-center">
-						<h2 className="mb-4 text-3xl font-bold">Choose Your Path</h2>
+						<h2 className="mb-4 text-3xl font-bold">Get Started</h2>
 						<p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-							Whether you want to learn, experiment, or dive right in, there's a
-							path for you.
+							New to AI-DLC? Start with the guided onboarding. Want the full
+							picture? Read the paper. Ready to go? Install and ship.
 						</p>
 					</div>
 					<div className="grid gap-6 md:grid-cols-3">
@@ -532,12 +527,26 @@ export default function Home() {
 						<div><code>/plugin marketplace add thebushidocollective/ai-dlc</code></div>
 						<div><code>/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project</code></div>
 					</div>
-					<div className="mt-6">
+					<div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
 						<Link
 							href="/docs/installation/"
 							className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
 						>
 							View full installation guide
+						</Link>
+						<span className="hidden text-gray-400 sm:inline">&middot;</span>
+						<Link
+							href="/about/"
+							className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+						>
+							Why AI-DLC?
+						</Link>
+						<span className="hidden text-gray-400 sm:inline">&middot;</span>
+						<Link
+							href="/paper/"
+							className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+						>
+							Read the paper
 						</Link>
 					</div>
 				</div>

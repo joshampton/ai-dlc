@@ -20,8 +20,7 @@ export function Footer() {
 							AI-DLC
 						</Link>
 						<p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-							A methodology for iterative AI-driven development with hat-based
-							workflows.
+							A methodology for the era of AI-driven software development.
 						</p>
 						{/* Social links */}
 						<div className="mt-4 flex gap-3">

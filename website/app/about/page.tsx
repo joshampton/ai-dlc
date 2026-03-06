@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 export const metadata: Metadata = {
 	title: "About - AI-DLC",
 	description:
-		"Learn about AI-DLC, a methodology for iterative AI-driven development with hat-based workflows.",
+		"AI-DLC is a methodology born from the evolution of software development — from machine code to AI-driven autonomous workflows.",
 }
 
 export default function AboutPage() {
@@ -11,37 +11,61 @@ export default function AboutPage() {
 		<div className="px-4 py-16">
 			<div className="mx-auto max-w-3xl">
 				<h1 className="mb-8 text-4xl font-bold tracking-tight sm:text-5xl">
-					About AI-DLC
+					Why AI-DLC?
 				</h1>
 
 				<div className="prose prose-gray dark:prose-invert max-w-none">
 					<p className="lead text-xl text-gray-600 dark:text-gray-400">
-						AI-DLC is a methodology for structured, iterative software
-						development with AI assistants. It provides a framework for
-						organizing work into focused units with clear phases and
-						responsibilities.
+						AI-DLC is a methodology for the next era of software development.
+						It reimagines how software gets built when AI is a central
+						collaborator, not just a tool.
 					</p>
 
-					<h2>The Problem</h2>
+					<h2>The Evolution of Software Development</h2>
 					<p>
-						When working with AI assistants like Claude, it is easy to fall into
-						unfocused patterns. Context switches happen mid-task, requirements
-						drift, and quality suffers. Without structure, AI-assisted
-						development can become chaotic and unproductive.
+						The history of software engineering is a continuous quest to let
+						developers focus on solving complex problems by abstracting away
+						lower-level work. From machine code to high-level languages, from
+						hand-rolled libraries to managed cloud services — each step moved
+						humans further from implementation details and closer to problem
+						expression.
+					</p>
+					<p>
+						Large Language Models marked a revolutionary shift, introducing
+						conversational natural language for code generation, bug detection,
+						and test creation. This was the <strong>AI-Assisted era</strong> —
+						AI enhancing specific tasks while humans retained full control.
+					</p>
+					<p>
+						We have now entered the <strong>AI-Autonomous era</strong>. AI can
+						maintain context across multi-hour workflows, iterate toward success
+						criteria autonomously, and sustain the kind of reasoning that used
+						to require entire teams. Iteration costs are approaching zero — you
+						try something, it fails, you adjust, you try again, all in seconds
+						rather than weeks.
 					</p>
 
-					<h2>The Solution</h2>
+					<h2>Why a New Methodology</h2>
 					<p>
-						AI-DLC introduces a hat-based approach to development. Each hat
-						represents a distinct mindset and set of responsibilities. By
-						explicitly switching between hats, you maintain focus and ensure
-						each phase of development gets proper attention.
+						Traditional methods — Waterfall, Agile, Scrum — were designed for
+						human-driven processes with long iteration cycles. Their sequential
+						phases, handoff documentation, and approval gates made economic
+						sense when changing requirements meant weeks of rework. But with AI,
+						those phases are not just being augmented — they are collapsing into
+						continuous flow.
+					</p>
+					<p>
+						Retrofitting AI into existing methods constrains its potential and
+						reinforces outdated inefficiencies. AI-DLC is built from first
+						principles for how development actually works now.
 					</p>
 
 					<h2>The Hat System</h2>
-
 					<p>
-						AI-DLC organizes work through hats — distinct mindsets that keep each phase of development focused. The default construction workflow uses three core hats, while specialized workflows add hats for security testing, design, TDD, and scientific debugging.
+						AI-DLC organizes work through hats — distinct mindsets that keep
+						each phase of development focused. The default construction workflow
+						uses three core hats, while specialized workflows add hats for
+						security testing, design, TDD, and scientific debugging.
 					</p>
 
 					<h3>Planner</h3>
@@ -69,7 +93,11 @@ export default function AboutPage() {
 					</p>
 
 					<p>
-						Beyond the core three, AI-DLC includes specialized hats like Designer for UI/UX work, Red Team and Blue Team for adversarial security testing, and Observer, Hypothesizer, Experimenter, and Analyst for scientific debugging. See the <a href="/docs/hats/">full hat reference</a> for details.
+						Beyond the core three, AI-DLC includes specialized hats like
+						Designer for UI/UX work, Red Team and Blue Team for adversarial
+						security testing, and Observer, Hypothesizer, Experimenter, and
+						Analyst for scientific debugging. See the{" "}
+						<a href="/docs/hats/">full hat reference</a> for details.
 					</p>
 
 					<h2>Units of Work</h2>
@@ -80,25 +108,27 @@ export default function AboutPage() {
 						ensures progress is measurable and momentum is maintained.
 					</p>
 
-					<h2>Benefits</h2>
+					<h2>What This Enables</h2>
 					<ul>
 						<li>
-							<strong>Clear focus</strong>: Know exactly what mode you are in at
-							all times
+							<strong>Continuous flow</strong>: Phases collapse into a natural
+							cycle rather than sequential gates
 						</li>
 						<li>
-							<strong>Quality built-in</strong>: Review is not an afterthought
+							<strong>Quality through backpressure</strong>: Automated
+							enforcement guides AI toward quality, not manual review
 						</li>
 						<li>
-							<strong>Measurable progress</strong>: Units provide natural
-							checkpoints
+							<strong>Human-on-the-loop</strong>: Define success criteria and
+							guardrails, then let AI iterate toward convergence
 						</li>
 						<li>
-							<strong>AI-native</strong>: Designed for AI-assisted workflows
+							<strong>Near-zero iteration cost</strong>: Try, fail, adjust, and
+							retry in seconds
 						</li>
 						<li>
-							<strong>Reduced context switching</strong>: Stay in one mode until
-							complete
+							<strong>AI-native workflows</strong>: Built for how AI actually
+							works, not retrofitted from human processes
 						</li>
 					</ul>
 
@@ -113,6 +143,19 @@ export default function AboutPage() {
 						<div><code>/plugin marketplace add thebushidocollective/ai-dlc</code></div>
 						<div><code>/plugin install ai-dlc@thebushidocollective-ai-dlc --scope project</code></div>
 					</div>
+
+					<h2>Go Deeper</h2>
+					<p>
+						For the full methodology — including production lessons, the Ralph
+						Wiggum autonomous loop pattern, and the research behind AI-DLC —{" "}
+						<a
+							href="/paper/"
+							className="text-blue-600 hover:underline dark:text-blue-400"
+						>
+							read the paper
+						</a>
+						.
+					</p>
 
 					<h2>Part of Han</h2>
 					<p>

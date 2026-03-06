@@ -4,32 +4,29 @@ description: An introduction to AI-DLC and its core concepts
 order: 1
 ---
 
-AI-DLC is a methodology for structured, iterative software development with AI assistants. It provides a framework for organizing work into focused units with clear phases and responsibilities.
+AI-DLC is a methodology for the era of AI-driven software development. It reimagines how software gets built when AI is a central collaborator, not just a tool.
 
 ## Why AI-DLC?
 
-When working with AI assistants like Claude, it's easy to fall into unfocused patterns:
+Software development has undergone a fundamental shift. AI has evolved from code completion to sustained autonomous reasoning — iterating in seconds, maintaining context across hours-long workflows, and writing production code at scale.
 
-- Context switches happen mid-task
-- Requirements drift without clear boundaries
-- Quality suffers from lack of structured review
-- Progress is hard to measure
+Traditional methods like Waterfall, Agile, and Scrum were designed for human-driven processes with long iteration cycles. Their sequential phases, handoff documentation, and approval gates made sense when changing requirements meant weeks of rework. But with AI, those phases are collapsing into continuous flow. Retrofitting AI into these methods constrains its potential.
 
-AI-DLC addresses these challenges by introducing structure without adding unnecessary overhead.
+AI-DLC is built from first principles for this new reality.
 
 ## Core Principles
 
-### 1. Intentional Context Switching
+### 1. Hats Drive Focus
 
-Instead of letting context drift organically, AI-DLC uses "hats" to mark explicit transitions between different modes of work. When you switch hats, both you and your AI assistant understand that the focus and expectations have changed.
+AI-DLC uses "hats" to mark explicit transitions between modes of work — Planner, Builder, and Reviewer. When you switch hats, both you and your AI understand that the focus and expectations have changed.
 
 ### 2. Focused Units of Work
 
-Work is organized into units - focused pieces of functionality with clear success criteria. Each unit is small enough to complete in one session but meaningful enough to deliver value.
+Work is organized into units — focused pieces of functionality with clear success criteria. Each unit is small enough to complete in one session but meaningful enough to deliver value.
 
-### 3. Quality Built-In
+### 3. Quality Through Backpressure
 
-Review is not an afterthought. Every unit goes through all four phases, ensuring that research, planning, building, and review all get proper attention.
+Instead of prescribing how to build, AI-DLC defines constraints that must be satisfied — tests pass, types check, linting is clean. AI iterates until all gates clear. Review is built into the cycle, not bolted on after.
 
 ### 4. Measurable Progress
 
@@ -38,8 +35,8 @@ Because work is organized into units with clear criteria, progress is always mea
 ## Getting Started
 
 1. Install the AI-DLC plugin in your Claude Code project
-2. Define your first unit of work with clear success criteria
-3. Move through the four hats: Researcher → Planner → Builder → Reviewer
+2. Define your first intent with clear success criteria
+3. Move through the core hats: Planner → Builder → Reviewer
 4. Complete the unit and move to the next
 
 See the [Quick Start](/docs/quick-start/) guide for detailed instructions.

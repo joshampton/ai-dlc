@@ -43,6 +43,11 @@ export const navigation: NavCategory[] = [
 						description: "Introduction to AI-DLC",
 					},
 					{
+						title: "Start Here",
+						href: "/start-here/",
+						description: "Guided onboarding for new users",
+					},
+					{
 						title: "The Paper",
 						href: "/paper/",
 						description: "Read the complete AI-DLC methodology",
@@ -52,25 +57,20 @@ export const navigation: NavCategory[] = [
 						href: "/big-picture/",
 						description: "Interactive visualization of the methodology",
 					},
-					{
-						title: "Start Here",
-						href: "/start-here/",
-						description: "Guided onboarding for new users",
-					},
 				],
 			},
 			{
 				title: "Reference",
 				items: [
 					{
+						title: "Why AI-DLC?",
+						href: "/about/",
+						description: "The evolution of software development",
+					},
+					{
 						title: "Glossary",
 						href: "/glossary/",
 						description: "AI-DLC terminology and definitions",
-					},
-					{
-						title: "About AI-DLC",
-						href: "/about/",
-						description: "The story behind the methodology",
 					},
 					{
 						title: "Blog",
@@ -83,8 +83,8 @@ export const navigation: NavCategory[] = [
 		featured: {
 			title: "New to AI-DLC?",
 			description:
-				"Read the full paper or start with the Big Picture diagram to understand how all the pieces fit together.",
-			href: "/paper/",
+				"Start with the guided onboarding, or read the paper to understand the full methodology.",
+			href: "/start-here/",
 		},
 	},
 	{
@@ -317,11 +317,11 @@ export const footerNavigation = {
 	learn: {
 		title: "Learn",
 		items: [
+			{ title: "Why AI-DLC?", href: "/about/" },
 			{ title: "Introduction", href: "/docs/" },
 			{ title: "Hats", href: "/docs/hats/" },
 			{ title: "Key Concepts", href: "/docs/concepts/" },
 			{ title: "Workflows", href: "/docs/workflows/" },
-			{ title: "Role Guides", href: "/docs/guide-developer/" },
 		],
 	},
 	implement: {
@@ -346,6 +346,7 @@ export const footerNavigation = {
 	resources: {
 		title: "Resources",
 		items: [
+			{ title: "The Paper", href: "/paper/" },
 			{ title: "Community", href: "/docs/community/" },
 			{ title: "Blog", href: "/blog/" },
 			{ title: "Changelog", href: "/changelog/" },
