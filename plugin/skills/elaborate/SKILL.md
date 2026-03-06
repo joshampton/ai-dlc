@@ -285,6 +285,13 @@ DISCOVERY_EOF
 
 This file is written directly in the intent worktree on the `ai-dlc/{intent-slug}/main` branch. No artifacts touch `main`.
 
+Commit the initialized discovery log so the worktree setup is versioned:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/discovery.md
+git commit -m "elaborate(${INTENT_SLUG}): initialize discovery log"
+```
+
 This ensures:
 - Main working directory stays on `main` for other work
 - All discovery findings are written directly on the intent branch
@@ -348,6 +355,15 @@ Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover-results.md`.
 - Parse the YAML frontmatter `status` field
 - If `status: error` — report the `error_message` to the user and discuss how to proceed
 - If `status: success` — read the domain model summary, key findings, and open questions from the results body
+
+### Step 5: Commit discovery findings
+
+After reading the results (regardless of status), commit the discovery artifacts so the exploration work is versioned:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/discovery.md .ai-dlc/${INTENT_SLUG}/.briefs/
+git commit -m "elaborate(${INTENT_SLUG}): complete domain discovery"
+```
 
 ### Present Domain Model to User
 
@@ -891,6 +907,13 @@ problem space.}
 {Relevant background, constraints, decisions made during elaboration}
 ```
 
+Commit the intent definition immediately so it's versioned before unit writing begins:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/intent.md
+git commit -m "elaborate(${INTENT_SLUG}): define intent"
+```
+
 ### 3. Write and review each `unit-NN-{slug}.md` individually:
 
 **Process each unit one at a time.** Write the file, present it for review, iterate until approved, then move to the next unit. Do NOT batch-write all units.
@@ -956,6 +979,13 @@ For each unit (in dependency order — units with no `depends_on` first):
 
 **Step A — Write the unit file** to `.ai-dlc/{intent-slug}/unit-NN-{slug}.md`.
 
+**Step A.1 — Commit the draft immediately.** Every write is versioned so the full evolution of each unit is visible in git history:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/unit-NN-{slug}.md
+git commit -m "elaborate(${INTENT_SLUG}): draft unit-NN-{slug}"
+```
+
 **Step B — Present the full unit for review.** Read the file you just wrote and display its **complete contents** — every single line including frontmatter, description, technical specification, success criteria, risks, boundaries, and notes. Do NOT summarize, truncate, or show only the title. The user must see exactly what will be committed. Use a fenced code block:
 
 ```
@@ -995,9 +1025,18 @@ fi
 }
 ```
 
-- **Approved**: Move to the next unit.
-- **Needs changes**: Discuss feedback, update the unit file, re-display the full contents, and re-ask. Loop until approved.
-- **Rethink unit**: Discuss the scope or approach, potentially split/merge/redesign the unit, rewrite the file, and re-present.
+- **Approved**: Move to the next unit. (The unit is already committed from Step A.1 or the most recent revision commit.)
+- **Needs changes**: Discuss feedback, update the unit file, then **commit the revision with the user's reasoning in the commit body**:
+  ```bash
+  git add .ai-dlc/${INTENT_SLUG}/unit-NN-{slug}.md
+  git commit -m "elaborate(${INTENT_SLUG}): revise unit-NN-{slug}
+
+  {Summarize the user's feedback that motivated this revision —
+  e.g., 'User requested splitting the auth check into middleware
+  instead of inline validation, and adding rate-limit criteria.'}"
+  ```
+  Re-display the full updated contents and re-ask for approval. Loop until approved.
+- **Rethink unit**: Discuss the scope or approach, potentially split/merge/redesign the unit, rewrite the file. **Commit with the user's reasoning** as above, then re-present for approval.
 
 ### 4. Save intent slug to han keep:
 
@@ -1008,11 +1047,13 @@ han keep save intent-slug "{intent-slug}"
 
 **Note:** Do NOT save `iteration.json` here. Construction state (hat, iteration count, workflow, status) is initialized by `/construct` when the build loop starts. Elaboration only writes the spec artifacts and the intent slug.
 
-### 5. Commit all artifacts on intent branch:
+### 5. Commit any remaining artifacts on intent branch:
+
+Intent and unit files were committed individually during steps 2 and 3. This catch-all commit picks up any remaining artifacts (briefs, han keep state, etc.):
 
 ```bash
 git add .ai-dlc/
-git commit -m "elaborate: define intent and units for ${intentSlug}"
+git diff --cached --quiet || git commit -m "elaborate(${INTENT_SLUG}): finalize elaboration artifacts"
 ```
 
 ### 5b. Push artifacts to remote (cowork)
