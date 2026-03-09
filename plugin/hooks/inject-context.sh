@@ -42,6 +42,13 @@ if [ -f "$CONFIG_LIB" ]; then
   source "$CONFIG_LIB"
 fi
 
+# Source HAIKU workspace integration (opt-in org memory)
+HAIKU_LIB="${CLAUDE_PLUGIN_ROOT}/lib/haiku.sh"
+if [ -f "$HAIKU_LIB" ]; then
+  # shellcheck source=/dev/null
+  source "$HAIKU_LIB"
+fi
+
 # Detect project maturity (greenfield / early / established)
 PROJECT_MATURITY=""
 if type detect_project_maturity &>/dev/null; then
@@ -607,6 +614,19 @@ else
   echo ""
   echo "Instructions for this hat..."
   echo "\`\`\`"
+fi
+
+# Inject HAIKU organizational memory (if workspace configured)
+if type haiku_is_configured &>/dev/null && haiku_is_configured; then
+  ORG_MEMORY=$(haiku_memory_context 100)
+  if [ -n "$ORG_MEMORY" ]; then
+    echo "### Organizational Memory (HAIKU)"
+    echo ""
+    echo "The following learnings are from your organization's HAIKU workspace:"
+    echo ""
+    echo "$ORG_MEMORY"
+    echo ""
+  fi
 fi
 
 # ============================================================================

@@ -9,7 +9,6 @@
   "homepage": "https://ai-dlc.dev",
   "repository": "https://github.com/thebushidocollective/ai-dlc",
   "license": "Apache-2.0",
-  "haiku_profile": "software",
   "keywords": [
     "ai-dlc",
     "methodology",
