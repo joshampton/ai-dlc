@@ -13,8 +13,9 @@
       "name": "ai-dlc",
       "description": "AI-DLC methodology - iterative AI-driven development with hat-based workflows, completion criteria, and automatic context preservation",
       "source": {
-        "source": "github",
-        "repo": "TheBushidoCollective/ai-dlc"
+        "source": "git-subdir",
+        "url": "TheBushidoCollective/ai-dlc",
+        "path": "plugin"
       },
       "category": "Pattern",
       "keywords": [
