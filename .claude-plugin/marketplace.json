@@ -15,7 +15,7 @@
       "source": {
         "source": "git-subdir",
         "url": "TheBushidoCollective/ai-dlc",
-        "path": "plugin"
+        "path": "."
       },
       "category": "Pattern",
       "keywords": [
