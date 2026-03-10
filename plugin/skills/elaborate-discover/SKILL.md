@@ -166,6 +166,10 @@ Agent({
 
 Spawn one subagent per design file, in parallel with codebase Explore agents. When results return:
 - Append to `discovery.md` under `## Design Analysis: {file name}`
+- **Commit immediately:**
+  ```bash
+  git add .ai-dlc/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover design analysis for {file name}"
+  ```
 - If no design MCP tools are discoverable, the subagent reports unavailability — log a warning and continue without design analysis
 
 5. **UI Mockups**: If the intent involves user-facing interfaces (frontend, CLI, TUI, etc.), generate mockups for every distinct screen or view. This step is **mandatory** for any intent with a UI component:
@@ -231,6 +235,11 @@ Spawn one subagent per design file, in parallel with codebase Explore agents. Wh
    - {UI region} ← {domain entity}.{field}
    ```
 
+   **Commit immediately after each mockup:**
+   ```bash
+   git add .ai-dlc/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover UI mockup for {View Name}"
+   ```
+
    **Skip mockups only if:** the intent has no user-facing interface (pure backend, API, data pipeline, infrastructure, etc.).
 
 **Spawn multiple research paths in parallel.** Don't serialize explorations that are independent — launch all of them at once and synthesize when results return.
@@ -252,6 +261,11 @@ After each significant finding (API schema mapped, codebase pattern identified, 
 - `## Architecture Decision: {topic}` — For greenfield/early projects: key architecture choices (frameworks, patterns, structure)
 - `## Technology Choice: {name}` — For greenfield/early projects: technology selection rationale
 - `## Reference Implementation: {name}` — For greenfield/early projects: external reference implementations or prior art informing the design
+
+**Commit immediately after each append to discovery.md:**
+```bash
+git add .ai-dlc/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover {topic}"
+```
 
 **After appending to discovery.md, keep only a brief summary in your context** — the full details are safely on disk and will be available to builders. This is the key benefit: your context stays lean for continued exploration while nothing is lost.
 
@@ -282,6 +296,11 @@ Structure the domain model as:
 ### Data Gaps
 - {description of any gap between what's needed and what's available}
 - {proposed solution for each gap}
+
+**Commit the domain model immediately after appending it to discovery.md:**
+```bash
+git add .ai-dlc/${INTENT_SLUG}/discovery.md && git commit -m "elaborate(${INTENT_SLUG}): discover domain model"
+```
 
 ---
 
@@ -332,6 +351,11 @@ error_message: ""
 - {path to mockup 2} — {description}
 ```
 
+**Commit the results file immediately after writing:**
+```bash
+git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results"
+```
+
 ---
 
 ## Error Handling
@@ -339,5 +363,9 @@ error_message: ""
 If any critical error occurs during exploration (e.g., worktree path doesn't exist, discovery.md not found):
 
 1. Write the results file with `status: error` and `error_message` describing what went wrong
-2. Include any partial findings that were gathered before the error
-3. Exit — the main elaborate skill will read the error status and handle it
+2. **Commit the error results file immediately:**
+   ```bash
+   git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover-results.md && git commit -m "elaborate(${INTENT_SLUG}): write discovery results (error)"
+   ```
+3. Include any partial findings that were gathered before the error
+4. Exit — the main elaborate skill will read the error status and handle it

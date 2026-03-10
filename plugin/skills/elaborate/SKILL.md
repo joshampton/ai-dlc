@@ -252,7 +252,10 @@ if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
   exit 1
 fi
 
-git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE"
+# Always branch off the default branch
+source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+DEFAULT_BRANCH=$(resolve_default_branch "auto" "$REPO_ROOT")
+git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE" "$DEFAULT_BRANCH"
 cd "$INTENT_WORKTREE"
 ```
 
@@ -338,6 +341,13 @@ provider_config: {JSON of PROVIDERS object}
 ## Discovery File Path
 
 {absolute path to discovery.md}
+```
+
+Commit the discovery brief immediately after writing it:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-discover.md
+git commit -m "elaborate(${INTENT_SLUG}): write discovery brief"
 ```
 
 ### Step 3: Invoke discovery subagent
@@ -1165,6 +1175,13 @@ design_provider_type: {DESIGN_TYPE or empty}
 {Abbreviated domain model from intent.md}
 ```
 
+Commit the wireframes brief immediately after writing it:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes.md
+git commit -m "elaborate(${INTENT_SLUG}): write wireframes brief"
+```
+
 ### Step 4: Invoke wireframes subagent
 
 ```
@@ -1180,6 +1197,13 @@ Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
 - If `status: skipped` — no frontend units found, proceed to Phase 6.5
 - If `status: error` — report the error to the user and discuss how to proceed
 - If `status: success` — list the generated wireframes for the user
+
+Commit the wireframe artifacts and results brief:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/mockups/ .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md
+git commit -m "elaborate(${INTENT_SLUG}): generate frontend wireframes"
+```
 
 ### Step 6: Product review gate
 
@@ -1201,7 +1225,11 @@ Present all generated wireframes to product for review using `AskUserQuestion`:
 ```
 
 - **Approved**: Proceed to Phase 6.5.
-- **Needs revision**: Discuss feedback, update the wireframe HTML files directly, and re-present for review. Loop until approved.
+- **Needs revision**: Discuss feedback, update the wireframe HTML files directly, commit the revision, and re-present for review. Loop until approved.
+  ```bash
+  git add .ai-dlc/${INTENT_SLUG}/mockups/
+  git commit -m "elaborate(${INTENT_SLUG}): revise wireframes"
+  ```
 - **Skip wireframes**: Delete the `mockups/` directory, remove `wireframe:` fields from unit frontmatter, and proceed to Phase 6.5.
 
 ---
@@ -1260,6 +1288,13 @@ plugin_root: {CLAUDE_PLUGIN_ROOT}
 - **Wireframe:** {wireframe path from frontmatter, if any}
 ```
 
+Commit the ticket sync brief immediately after writing it:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync.md
+git commit -m "elaborate(${INTENT_SLUG}): write ticket sync brief"
+```
+
 ### Step 3: Invoke ticket sync subagent
 
 ```
@@ -1275,6 +1310,13 @@ Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-ticket-sync-results.md`.
 - If `status: skipped` — ticketing not configured or MCP tools unavailable, proceed to Phase 7
 - If `status: error` — report the errors to the user. If `validation_passed: false`, the subagent already retried. Log the failures and proceed to Phase 7 (never block elaboration on ticket sync failure)
 - If `status: success` — log the epic key and ticket keys, confirm validation passed, proceed to Phase 7
+
+Commit the ticket sync artifacts (updated intent.md and unit files with ticket keys, plus the results brief):
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/
+git commit -m "elaborate(${INTENT_SLUG}): sync tickets to provider"
+```
 
 ---
 

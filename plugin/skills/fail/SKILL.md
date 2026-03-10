@@ -61,6 +61,17 @@ REASON="Reviewer found issues: [describe issues]"
 han keep save blockers.md "$REASON"
 ```
 
+### Step 3a: Commit Blocker Documentation
+
+If any blocker documentation was written to the working tree (not han keep), commit immediately:
+
+```bash
+if [ -n "$(git status --porcelain)" ]; then
+  git add -A
+  git commit -m "ai-dlc(${INTENT_SLUG}): document blocker"
+fi
+```
+
 ### Step 4: Update State
 
 ```bash

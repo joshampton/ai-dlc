@@ -554,7 +554,7 @@ fi
 # Display Agent Teams status if enabled
 if [ -n "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}" ]; then
   TEAM_NAME="ai-dlc-${INTENT_SLUG}"
-  TEAM_CONFIG="$HOME/.claude/teams/${TEAM_NAME}/config.json"
+  TEAM_CONFIG="${CLAUDE_CONFIG_DIR}/teams/${TEAM_NAME}/config.json"
   if [ -f "$TEAM_CONFIG" ]; then
     echo "### Agent Teams"
     echo ""

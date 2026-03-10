@@ -127,7 +127,10 @@ if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
 fi
 
 if [ ! -d "$INTENT_WORKTREE" ]; then
-  git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE"
+  # Always branch off the default branch
+  source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+  DEFAULT_BRANCH=$(resolve_default_branch "auto" "$REPO_ROOT")
+  git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE" "$DEFAULT_BRANCH"
 fi
 cd "$INTENT_WORKTREE"
 ```
@@ -151,7 +154,7 @@ When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled:
 ```bash
 AGENT_TEAMS_ENABLED="${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-}"
 TEAM_NAME="ai-dlc-${SLUG}"
-TEAM_CONFIG="$HOME/.claude/teams/${TEAM_NAME}/config.json"
+TEAM_CONFIG="${CLAUDE_CONFIG_DIR}/teams/${TEAM_NAME}/config.json"
 ```
 
 If `AGENT_TEAMS_ENABLED` is set:

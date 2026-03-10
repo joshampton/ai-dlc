@@ -99,7 +99,7 @@ Session transcripts are stored as JSONL files. Find sessions associated with thi
 
 ```bash
 # Claude Code session logs location
-PROJECT_HASH_DIR="$HOME/.claude/projects/"
+PROJECT_HASH_DIR="${CLAUDE_CONFIG_DIR}/projects/"
 
 # Find the project hash directory for the current repo
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
@@ -228,6 +228,12 @@ status: complete
 {What v2 should focus on, if the user chooses to iterate}
 ```
 
+Commit the reflection artifact immediately after writing:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/reflection.md && git commit -m "reflect(${INTENT_SLUG}): capture reflection"
+```
+
 ### Step 4b: Produce settings-recommendations.md
 
 Based on session analysis and execution patterns, produce concrete settings changes. Write to `.ai-dlc/{intent-slug}/settings-recommendations.md`:
@@ -273,6 +279,12 @@ Example:
 
 Example:
 - Success criteria should specify test coverage thresholds numerically (units with "adequate coverage" criteria caused 2x reviewer cycles vs units with "80% line coverage")
+```
+
+Commit the settings recommendations artifact immediately after writing:
+
+```bash
+git add .ai-dlc/${INTENT_SLUG}/settings-recommendations.md && git commit -m "reflect(${INTENT_SLUG}): document settings recommendations"
 ```
 
 ### Step 5: Present Findings for Validation
@@ -392,6 +404,12 @@ If user chooses to close:
 
 ### Process Insights
 - {Process improvement that applies broadly}
+```
+
+Commit the learnings immediately after writing:
+
+```bash
+git add .claude/memory/learnings.md && git commit -m "reflect(${INTENT_SLUG}): capture learnings"
 ```
 
 3. **Sync to HAIKU organizational memory** (if workspace configured):

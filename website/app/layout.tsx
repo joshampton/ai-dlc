@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Script from "next/script"
 import {
 	Footer,
 	Header,
@@ -71,6 +72,12 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<head>
+				<Script
+					defer
+					data-domain="ai-dlc.dev"
+					src="https://plausible.io/js/script.js"
+					strategy="afterInteractive"
+				/>
 				<WebSiteJsonLd
 					name="AI-DLC"
 					url={SITE_URL}

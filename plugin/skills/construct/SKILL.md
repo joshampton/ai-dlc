@@ -154,7 +154,10 @@ if ! grep -q '\.ai-dlc/worktrees/' "${REPO_ROOT}/.gitignore" 2>/dev/null; then
 fi
 
 if [ ! -d "$INTENT_WORKTREE" ]; then
-  git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE"
+  # Always branch off the default branch
+  source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+  DEFAULT_BRANCH=$(resolve_default_branch "auto" "$REPO_ROOT")
+  git worktree add -B "$INTENT_BRANCH" "$INTENT_WORKTREE" "$DEFAULT_BRANCH"
 fi
 
 cd "$INTENT_WORKTREE"
@@ -372,7 +375,7 @@ Check if the team already exists before creating:
 
 ```bash
 TEAM_NAME="ai-dlc-${INTENT_SLUG}"
-TEAM_CONFIG="$HOME/.claude/teams/${TEAM_NAME}/config.json"
+TEAM_CONFIG="${CLAUDE_CONFIG_DIR}/teams/${TEAM_NAME}/config.json"
 ```
 
 If team config does NOT exist:
@@ -421,7 +424,10 @@ UNIT_BRANCH="ai-dlc/${INTENT_SLUG}/${UNIT_SLUG}"
 WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${INTENT_SLUG}-${UNIT_SLUG}"
 
 if [ ! -d "$WORKTREE_PATH" ]; then
-  git worktree add -B "$UNIT_BRANCH" "$WORKTREE_PATH"
+  # Always branch off the default branch
+  source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+  DEFAULT_BRANCH=$(resolve_default_branch "auto" "$REPO_ROOT")
+  git worktree add -B "$UNIT_BRANCH" "$WORKTREE_PATH" "$DEFAULT_BRANCH"
 fi
 ```
 
@@ -1052,7 +1058,10 @@ WORKTREE_PATH="${REPO_ROOT}/.ai-dlc/worktrees/${intentSlug}-${UNIT_SLUG}"
 
 # Create worktree if it doesn't exist
 if [ ! -d "$WORKTREE_PATH" ]; then
-  git worktree add -B "$UNIT_BRANCH" "$WORKTREE_PATH"
+  # Always branch off the default branch
+  source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
+  DEFAULT_BRANCH=$(resolve_default_branch "auto" "$REPO_ROOT")
+  git worktree add -B "$UNIT_BRANCH" "$WORKTREE_PATH" "$DEFAULT_BRANCH"
 fi
 ```
 

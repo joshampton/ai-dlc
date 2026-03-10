@@ -229,6 +229,10 @@ For each **confirmed provider**, offer to customize how AI-DLC interacts with it
      {contents of built-in default, body only (after frontmatter)}
      ```
    - Tell the user: "Created `.ai-dlc/providers/{type}.md` with defaults as a starting point. Edit this file to customize how AI-DLC interacts with {type} for this project."
+   - Commit the new override file immediately:
+     ```bash
+     git add .ai-dlc/providers/{type}.md && git commit -m "ai-dlc: configure {type} provider"
+     ```
 
 5. **If "Use defaults"** → skip, no file created. The built-in defaults apply automatically.
 
@@ -236,8 +240,14 @@ For each **confirmed provider**, offer to customize how AI-DLC interacts with it
    - "Project override exists at `.ai-dlc/providers/{type}.md`. Want to keep it, reset to defaults, or remove it?"
    - Options:
      - **"Keep as-is"** — Don't touch the existing override
-     - **"Reset to defaults"** — Overwrite with current built-in defaults
-     - **"Remove override"** — Delete the file, revert to built-in defaults only
+     - **"Reset to defaults"** — Overwrite with current built-in defaults, then commit:
+       ```bash
+       git add .ai-dlc/providers/{type}.md && git commit -m "ai-dlc: reset {type} provider to defaults"
+       ```
+     - **"Remove override"** — Delete the file, revert to built-in defaults only, then commit the removal:
+       ```bash
+       git rm .ai-dlc/providers/{type}.md && git commit -m "ai-dlc: remove {type} provider override"
+       ```
 
 **Skip** this phase for any provider category that has no confirmed provider.
 
@@ -306,6 +316,11 @@ Rules:
 - Output must validate against `plugin/schemas/settings.schema.json`
 
 3. Write the file using the `Write` tool to `.ai-dlc/settings.yml`.
+
+4. Commit the settings file immediately:
+   ```bash
+   git add .ai-dlc/settings.yml && git commit -m "ai-dlc: configure project settings"
+   ```
 
 ---
 

@@ -131,6 +131,17 @@ if [ -n "$TASK_COMMAND" ]; then
 fi
 ```
 
+### Step 4a: Commit Agent Task Changes
+
+If any agent-owned task execution modified files in the working tree, commit immediately after the task completes:
+
+```bash
+if [ -n "$(git status --porcelain)" ]; then
+  git add -A
+  git commit -m "operate(${INTENT_SLUG}): execute ${TASK_NAME}"
+fi
+```
+
 ### Step 5: Handle Human-Owned Tasks
 
 For tasks where `owner: human`:
