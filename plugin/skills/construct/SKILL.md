@@ -724,27 +724,27 @@ This means ANY hat can reject -- not just the reviewer. A red-team finding issue
 2. Check if ALL units are blocked
 3. If all blocked, alert user: "All units blocked. Human intervention required."
 
-### Step 5 (Teams): Integrator and Team Shutdown
+### Step 5 (Teams): Integration Validation and Team Shutdown
 
 When all units complete:
 
-#### 5a. Spawn Integrator
+#### 5a. Run Integration Validation
 
-Before shutting down the team, spawn the Integrator as a teammate on the **intent worktree** (not a unit worktree):
+Before shutting down the team, run the `/integrate` skill as a teammate on the **intent worktree** (not a unit worktree). Integration is implemented as an internal skill (see `plugin/skills/integrate/SKILL.md`), not a hat.
 
 ```bash
-# Check if integrator has already passed
+# Check if integration has already passed
 INTEGRATOR_COMPLETE=$(echo "$STATE" | han parse json integratorComplete -r --default "false")
 
 # Count total units
 UNIT_COUNT=$(ls -1 "$INTENT_DIR"/unit-*.md 2>/dev/null | wc -l)
 ```
 
-Skip the integrator if:
+Skip integration if:
 - Only one unit (the reviewer already validated it)
 - ALL units effectively use `unit` strategy (each unit reviewed individually via per-unit MR)
 
-Note: In hybrid mode (intent-level `intent` + some units overriding to `unit`), the integrator still runs because non-unit units merge into the intent branch and need integration verification.
+Note: In hybrid mode (intent-level `intent` + some units overriding to `unit`), integration still runs because non-unit units merge into the intent branch and need integration verification.
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/config.sh"
@@ -767,36 +767,17 @@ SKIP_INTEGRATOR=false
 
 If `SKIP_INTEGRATOR` is false and `integratorComplete` is not `true`:
 
-1. Load integrator hat instructions:
-
-```bash
-HAT_FILE=""
-if [ -f ".ai-dlc/hats/integrator.md" ]; then
-  HAT_FILE=".ai-dlc/hats/integrator.md"
-elif [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hats/integrator.md" ]; then
-  HAT_FILE="${CLAUDE_PLUGIN_ROOT}/hats/integrator.md"
-fi
-
-HAT_INSTRUCTIONS=""
-if [ -n "$HAT_FILE" ]; then
-  HAT_INSTRUCTIONS=$(sed '1,/^---$/d' "$HAT_FILE" | sed '1,/^---$/d')
-fi
-```
-
-2. Spawn integrator as a teammate:
+Spawn the integrate skill as a teammate:
 
 ```javascript
 Task({
   subagent_type: "general-purpose",
-  description: `integrator: ${intentSlug}`,
-  name: `integrator-${intentSlug}`,
+  description: `integrate: ${intentSlug}`,
+  name: `integrate-${intentSlug}`,
   team_name: `ai-dlc-${intentSlug}`,
 
   prompt: `
-    Execute the Integrator role for intent ${intentSlug}.
-
-    ## Your Role: Integrator
-    ${HAT_INSTRUCTIONS}
+    Run the /integrate skill for intent ${intentSlug}.
 
     ## CRITICAL: Work on Intent Branch
     **Worktree path:** .ai-dlc/worktrees/${intentSlug}/
@@ -819,15 +800,15 @@ Task({
 })
 ```
 
-3. Handle integrator result:
+Handle integration result:
 
 **If ACCEPT:** Set `integratorComplete = true`, proceed to shutdown below.
 
-**If REJECT:** Re-queue rejected units (same logic as advance/SKILL.md Step 2e — set status to `pending`, reset hat to first workflow hat). Spawn new teammates for re-queued units. Do NOT shut down the team.
+**If REJECT:** Re-queue rejected units (same logic as advance/SKILL.md Step 2e -- set status to `pending`, reset hat to first workflow hat). Spawn new teammates for re-queued units. Do NOT shut down the team.
 
 #### 5b. Team Shutdown
 
-After integrator accepts (or if `integratorComplete` was already true):
+After integration accepts (or if `integratorComplete` was already true):
 
 1. Send shutdown requests to all active teammates:
 
@@ -1144,14 +1125,14 @@ Based on the subagent's response:
 - **Issues found** (reviewer): Call `/fail` to return to builder
 - **Blocked**: Document and stop loop for user intervention
 
-When `/advance` marks the intent complete (all units done + integrator passed), proceed to Step 5.
+When `/advance` marks the intent complete (all units done + integration passed), proceed to Step 5.
 
-**Note:** The integrator is handled by `/advance` (Step 2e). When all units complete, `/advance` automatically spawns the integrator before marking the intent complete. If the integrator rejects, `/advance` re-queues units and the construction loop continues.
+**Note:** Integration validation is handled by `/advance` (Step 2e). When all units complete, `/advance` automatically runs the `/integrate` skill before marking the intent complete. If integration rejects, `/advance` re-queues units and the construction loop continues.
 
 #### Step 5: Loop Behavior and Delivery
 
 The construction loop is **fully autonomous**. It continues until:
-1. **Complete** - All units done, `/advance` marks intent complete (after integrator passes)
+1. **Complete** - All units done, `/advance` marks intent complete (after integration passes)
 2. **All units blocked** - No forward progress possible, human must intervene
 3. **Session exhausted** - Stop hook fires, instructs agent to call `/construct`
 4. **Targeted unit done** - When `targetUnit` is set, stop after that unit's workflow completes (do NOT auto-continue to next unit)

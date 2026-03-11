@@ -614,6 +614,7 @@ Do NOT ask the user whether to decompose. Assess the complexity from the domain 
 | `backend`, `api`, `devops`, `documentation` | `default` (planner → builder → reviewer) | Standard implementation cycle |
 | `design` | `design` (planner → designer → reviewer) | Design artifacts need design hat, not builder |
 | Security-sensitive units | `adversarial` (planner → builder → red-team → blue-team → reviewer) | Adversarial testing for auth, crypto, data handling |
+| Test-driven units | `tdd` (test-writer → implementer → refactorer → reviewer) | Red-Green-Refactor cycle for high-correctness code |
 | Units without a clear workflow need | (omit `workflow:` field) | Inherits the intent-level workflow |
 
 Set the `workflow:` frontmatter field on units that need a non-default workflow. Omit it (or leave empty) for units that should use the intent-level workflow.
@@ -684,7 +685,7 @@ For each cross-cutting concern identified, decide how to handle it using `AskUse
 ```
 
 - **If foundation unit**: Add it to the unit list with appropriate `depends_on` edges from consuming units. Follow the same unit specification format from Phase 5.
-- **If convention**: Add it to the intent-level success criteria. The Integrator (and each unit's Reviewer) will verify compliance.
+- **If convention**: Add it to the intent-level success criteria. The integration validation step (and each unit's Reviewer) will verify compliance.
 
 **Skip this phase if there is only one unit.**
 

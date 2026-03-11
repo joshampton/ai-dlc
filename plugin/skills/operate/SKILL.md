@@ -50,8 +50,8 @@ If `operations.md` does not exist:
 ```
 No operational plan found at .ai-dlc/{intent-slug}/operations.md
 
-The operational plan is produced during the Execution phase when using
-the 'operational' or 'reflective' workflow.
+The operational plan is produced during the Execution phase by the Builder
+when the unit has operational requirements.
 
 To create one now, create operations.md in the intent directory with
 recurring, reactive, and manual task sections.

@@ -400,6 +400,17 @@ if [ -n "$PROJECT_MATURITY" ]; then
   echo ""
 fi
 
+# Load project-level learnings from prior reflections (.claude/memory/learnings.md)
+# These are distilled insights captured when intents are closed via /reflect
+LEARNINGS_FILE=".claude/memory/learnings.md"
+if [ -f "$LEARNINGS_FILE" ]; then
+  echo "### Learnings from Previous Intents"
+  echo ""
+  # Show last 50 lines to keep context lean
+  tail -n 50 "$LEARNINGS_FILE"
+  echo ""
+fi
+
 # Batch load all han keep values at once (single subprocess call)
 # This is much faster than 5+ separate han keep load calls
 load_all_keep_values() {

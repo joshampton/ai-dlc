@@ -239,6 +239,7 @@ Select a workflow during `/elaborate`:
 | **adversarial** | Security-focused with Red/Blue team | planner, builder, red-team, blue-team, reviewer |
 | **design** | UI/UX units producing design artifacts | planner, designer, reviewer |
 | **hypothesis** | Scientific debugging | observer, hypothesizer, experimenter, analyst |
+| **tdd** | Test-Driven Development | test-writer, implementer, refactorer, reviewer |
 
 ## Hats
 
@@ -259,7 +260,6 @@ All hats follow the [Agent SOP format](https://github.com/strands-agents/agent-s
 | Builder | Implement according to plan and criteria |
 | Reviewer | Verify implementation meets criteria |
 | Designer | Produce UI/UX design artifacts |
-| Integrator | Cross-cutting integration concerns |
 | Test Writer | Write failing tests first |
 | Implementer | Make tests pass with minimal code |
 | Refactorer | Improve code while keeping tests green |
@@ -269,6 +269,8 @@ All hats follow the [Agent SOP format](https://github.com/strands-agents/agent-s
 | Hypothesizer | Form theories about the cause |
 | Experimenter | Test hypotheses systematically |
 | Analyst | Evaluate results and implement fix |
+
+> **Note:** Cross-cutting integration validation runs automatically after all units are merged (via the internal `/integrate` skill), not as a hat in the per-unit workflow. It verifies that units work together and intent-level success criteria are met.
 
 ## State Management
 

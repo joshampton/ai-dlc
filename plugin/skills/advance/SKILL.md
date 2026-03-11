@@ -180,8 +180,8 @@ READY_COUNT=$(echo "$DAG_SUMMARY" | han parse json readyCount -r)
 
 ```javascript
 if (dagSummary.allComplete) {
-  // ALL UNITS COMPLETE - Check if integrator should run
-  // Skip integrator for:
+  // ALL UNITS COMPLETE - Check if integration validation should run
+  // Skip integration for:
   //   - Single-unit intents (reviewer already validated it)
   //   - ALL units effectively use "unit" strategy (each reviewed individually via per-unit MR)
   // Hybrid check: iterate all units to see if any use non-unit strategy
@@ -204,11 +204,11 @@ SKIP_INTEGRATOR=false
 
 ```javascript
   if (!skipIntegrator && !state.integratorComplete) {
-    // Spawn integrator on the intent branch
+    // Run integration validation on the intent branch
     // See Step 2e below
-    return spawnIntegrator();
+    return runIntegration();
   }
-  // Integrator passed - Mark intent as done
+  // Integration passed - Mark intent as done
   state.status = "complete";
   // han keep save iteration.json '<updated JSON>'
   // Output completion summary (see Step 5)
@@ -254,46 +254,27 @@ This replaces the sequential "loop back to builder" behavior when Agent Teams is
 
 **Without Agent Teams:** The existing behavior (reset hat to builder, let `/construct` pick next unit) continues unchanged.
 
-### Step 2e: Integrator Spawning (When All Units Complete)
+### Step 2e: Integration Validation (When All Units Complete)
 
-When `dagSummary.allComplete` is true and `state.integratorComplete` is not true, spawn the Integrator instead of marking the intent complete.
+When `dagSummary.allComplete` is true and `state.integratorComplete` is not true, run integration validation instead of marking the intent complete.
 
-**The Integrator is NOT a per-unit hat** — it does not appear in the workflow sequence. It runs once on the merged intent branch after all units pass their per-unit workflows.
+**Integration is NOT a per-unit hat** — it does not appear in the workflow sequence. It runs once on the merged intent branch after all units pass their per-unit workflows. It is implemented as the internal `/integrate` skill (see `plugin/skills/integrate/SKILL.md`).
 
-1. Set state to indicate integrator is running:
+1. Set state to indicate integration is running:
 
 ```bash
 STATE=$(echo "$STATE" | han parse json --set "hat=integrator")
 han keep save iteration.json "$STATE"
 ```
 
-2. Load integrator hat instructions:
-
-```bash
-HAT_FILE=""
-if [ -f ".ai-dlc/hats/integrator.md" ]; then
-  HAT_FILE=".ai-dlc/hats/integrator.md"
-elif [ -n "$CLAUDE_PLUGIN_ROOT" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/hats/integrator.md" ]; then
-  HAT_FILE="${CLAUDE_PLUGIN_ROOT}/hats/integrator.md"
-fi
-
-HAT_INSTRUCTIONS=""
-if [ -n "$HAT_FILE" ]; then
-  HAT_INSTRUCTIONS=$(sed '1,/^---$/d' "$HAT_FILE" | sed '1,/^---$/d')
-fi
-```
-
-3. Spawn integrator subagent on the **intent worktree** (not a unit worktree):
+2. Spawn the integrate skill as a subagent on the **intent worktree** (not a unit worktree):
 
 ```javascript
 Task({
   subagent_type: "general-purpose",
-  description: `integrator: ${intentSlug}`,
+  description: `integrate: ${intentSlug}`,
   prompt: `
-    Execute the Integrator role for intent ${intentSlug}.
-
-    ## Your Role: Integrator
-    ${HAT_INSTRUCTIONS}
+    Run the /integrate skill for intent ${intentSlug}.
 
     ## CRITICAL: Work on Intent Branch
     **Worktree path:** .ai-dlc/worktrees/${intentSlug}/
@@ -316,7 +297,7 @@ Task({
 })
 ```
 
-4. Handle integrator result:
+3. Handle integration result:
 
 **If ACCEPT:**
 ```bash
@@ -327,7 +308,7 @@ han keep save iteration.json "$STATE"
 
 **If REJECT:**
 
-The integrator specifies which units need rework. For each rejected unit:
+The integration result specifies which units need rework. For each rejected unit:
 
 ```bash
 source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
@@ -348,12 +329,12 @@ for UNIT_FILE in $REJECTED_UNITS; do
     --set "unitStates.${UNIT_NAME}.workflow=${UNIT_WORKFLOW}")
 done
 
-# Reset integrator state
+# Reset integration state
 GLOBAL_FIRST_HAT=$(echo "$INTENT_WORKFLOW_HATS" | jq -r '.[0]')
 STATE=$(echo "$STATE" | han parse json --set "hat=${GLOBAL_FIRST_HAT}" --set "integratorComplete=false")
 han keep save iteration.json "$STATE"
 
-# Output: "Integrator rejected. Re-queued units: {list}. Run /construct to continue."
+# Output: "Integration rejected. Re-queued units: {list}. Run /construct to continue."
 ```
 
 The re-queued units will be picked up on the next `/construct` cycle through the normal DAG-based unit selection.
