@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.17] - 2026-03-23
+
+### Other
+
+- fix hook exit behavior and update parse replacement strategy ([ad4c8db](../../commit/ad4c8db))
+- add jq/yq dependency management and parse library design ([7a7eeab](../../commit/7a7eeab))
+- remove han keep dependency & improve intent state management ([42171dd](../../commit/42171dd))
+
 ## [1.20.16] - 2026-03-11
 
 ## [1.20.15] - 2026-03-11
