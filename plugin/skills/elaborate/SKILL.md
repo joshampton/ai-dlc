@@ -1054,10 +1054,10 @@ git commit -m "elaborate(${INTENT_SLUG}): draft unit-NN-{slug}"
 
 **CRITICAL: If your output only shows the unit title or frontmatter without the body sections (Description, Technical Specification, Success Criteria, etc.), you have truncated the output. Go back and display the full file.**
 
-**Step C — If the unit has `discipline: frontend`, open its wireframe in the browser** so the user can review the visual alongside the spec:
+**Step C — If the unit has `discipline: frontend` or `discipline: design`, open its wireframe in the browser** so the user can review the visual alongside the spec:
 
 ```bash
-# Only for frontend units — open the wireframe if it exists
+# Only for frontend or design units — open the wireframe if it exists
 WIREFRAME=".ai-dlc/${INTENT_SLUG}/mockups/unit-NN-{slug}-wireframe.html"
 if [ -f "$WIREFRAME" ]; then
   open "$WIREFRAME"  # macOS; use xdg-open on Linux
@@ -1124,17 +1124,17 @@ This ensures builders can pull the intent branch when working remotely. Note in 
 
 ---
 
-## Phase 6.25: Generate Frontend Wireframes (Delegated)
+## Phase 6.25: Generate Frontend & Design Wireframes (Delegated)
 
-**Skip this phase entirely if no units have `discipline: frontend` in their frontmatter.**
+**Skip this phase entirely if no units have `discipline: frontend` or `discipline: design` in their frontmatter.**
 
-Wireframe generation runs in a forked subagent. The subagent generates low-fidelity HTML wireframes for all frontend units, updates unit frontmatter, and commits the artifacts.
+Wireframe generation runs in a forked subagent. The subagent generates low-fidelity HTML wireframes for all frontend and design units, updates unit frontmatter, and commits the artifacts.
 
-### Step 1: Identify frontend units
+### Step 1: Identify frontend and design units
 
-Scan all `unit-*.md` files in `.ai-dlc/{intent-slug}/`. Collect units where frontmatter contains `discipline: frontend`.
+Scan all `unit-*.md` files in `.ai-dlc/{intent-slug}/`. Collect units where frontmatter contains `discipline: frontend` or `discipline: design`.
 
-If no frontend units exist, skip to Phase 6.5.
+If no frontend or design units exist, skip to Phase 6.5.
 
 ### Step 2: Load design provider config
 
@@ -1156,9 +1156,9 @@ intent_title: {Intent Title from intent.md}
 design_provider_type: {DESIGN_TYPE or empty}
 ---
 
-# Frontend Units
+# Frontend & Design Units
 
-{For each frontend unit, include:}
+{For each frontend or design unit, include:}
 
 ## {unit filename}
 
@@ -1195,7 +1195,7 @@ Skill("elaborate-wireframes", args: ".ai-dlc/{INTENT_SLUG}/.briefs/elaborate-wir
 
 Read `.ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md`.
 
-- If `status: skipped` — no frontend units found, proceed to Phase 6.5
+- If `status: skipped` — no frontend or design units found, proceed to Phase 6.5
 - If `status: error` — report the error to the user and discuss how to proceed
 - If `status: success` — list the generated wireframes for the user
 
@@ -1203,7 +1203,7 @@ Commit the wireframe artifacts and results brief:
 
 ```bash
 git add .ai-dlc/${INTENT_SLUG}/mockups/ .ai-dlc/${INTENT_SLUG}/.briefs/elaborate-wireframes-results.md
-git commit -m "elaborate(${INTENT_SLUG}): generate frontend wireframes"
+git commit -m "elaborate(${INTENT_SLUG}): generate frontend and design wireframes"
 ```
 
 ### Step 6: Product review gate
@@ -1213,7 +1213,7 @@ Present all generated wireframes to product for review using `AskUserQuestion`:
 ```json
 {
   "questions": [{
-    "question": "I've generated low-fidelity wireframes for the frontend units. Please open them in a browser to review screen structure, flow, and placeholder copy. How do they look?",
+    "question": "I've generated low-fidelity wireframes for the frontend and design units. Please open them in a browser to review screen structure, flow, and placeholder copy. How do they look?",
     "header": "Wireframes",
     "options": [
       {"label": "Approved", "description": "Wireframes accurately capture the intended screens, flows, and copy"},
