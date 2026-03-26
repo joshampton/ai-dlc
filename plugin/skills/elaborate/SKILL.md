@@ -744,19 +744,31 @@ Then ask with `AskUserQuestion`:
 
 ## Phase 5.8: Git Strategy
 
-Ask about the branching and merge strategy for this intent. These settings control how unit work is organized and merged.
+Ask about the delivery strategy, source branch, and merge behavior for this intent. These settings control how unit work is organized and delivered.
 
 Use `AskUserQuestion`:
+
+**Question 1: Delivery strategy**
+
 ```json
 {
   "questions": [
     {
-      "question": "How should unit work be branched?",
-      "header": "Branching",
+      "question": "How should completed units be delivered?",
+      "header": "Delivery Strategy",
       "options": [
-        {"label": "Unit branches (Recommended)", "description": "Each unit gets its own branch and MR, reviewed individually. Supports human or agent builders and /construct <unit-name> targeting. Best for teams adopting AI-DLC gradually."},
-        {"label": "Intent branch", "description": "All units merge into a single intent branch. Agents build autonomously via DAG ordering, one MR reviewed at the end. Best for fully autonomous workflows."},
-        {"label": "Trunk-based", "description": "All work on main, no feature branches. Best for small, low-risk changes."}
+        {
+          "label": "Review each unit individually",
+          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
+        },
+        {
+          "label": "Build everything, then open one MR",
+          "description": "Units merge into an intent branch as they complete. Dependent units start automatically once their dependencies are done. One final MR for the whole intent."
+        },
+        {
+          "label": "Build everything on my default branch",
+          "description": "Same as above, but all work happens directly on the default branch. No feature branches, no MR — relies on CI to gate quality."
+        }
       ],
       "multiSelect": false
     }
@@ -764,7 +776,31 @@ Use `AskUserQuestion`:
 }
 ```
 
-**If the user selected "Intent branch"**, ask a follow-up about auto-merge:
+**Question 2: Source branch** *(asked for ALL strategies)*
+
+```json
+{
+  "questions": [
+    {
+      "question": "Which branch should units be created from?",
+      "header": "Source Branch",
+      "options": [
+        {
+          "label": "Use the default branch (recommended)",
+          "description": "Create unit/intent branches from the repo's default branch (e.g. main, dev)."
+        },
+        {
+          "label": "Use my current branch",
+          "description": "Create branches from the branch you're currently on."
+        }
+      ],
+      "multiSelect": false
+    }
+  ]
+}
+```
+
+**Question 3: Auto-merge** *(only if user selected "Build everything, then open one MR")*
 
 ```json
 {
@@ -782,7 +818,7 @@ Use `AskUserQuestion`:
 }
 ```
 
-**Skip the auto-merge question for "Unit branches"** — in unit strategy, each unit creates its own PR and the user is responsible for merging. **Skip for "Trunk-based"** — no branches to merge.
+**Skip the auto-merge question for "Review each unit individually"** — in unit strategy, each unit creates its own PR and the user is responsible for merging. **Skip for "Build everything on my default branch"** — no branches to merge.
 
 Store the selections. These will be written into the `intent.md` frontmatter in Phase 6 under a `git:` key:
 
@@ -794,15 +830,22 @@ git:
 ```
 
 Map user selections to config values:
-- "Unit branches" → `unit` (no `auto_merge` key — user merges their own PRs)
-- "Intent branch" → `intent`
-- "Trunk-based" → `trunk`
+
+| What You Want | Strategy Value |
+|--------------|----------------|
+| Review each unit individually | `unit` |
+| Build everything, then open one MR | `intent` |
+| Build everything on my default branch | `trunk` |
+
+- "Review each unit individually" → `unit` (no `auto_merge` key — user merges their own PRs)
+- "Build everything, then open one MR" → `intent`
+- "Build everything on my default branch" → `trunk`
 - "Yes" auto-merge → `auto_merge: true` (intent strategy only)
 - "No" auto-merge → `auto_merge: false` (intent strategy only)
 
 ### Hybrid Per-Unit Strategy (Optional)
 
-If the user selected **"Intent branch"** strategy, ask whether any foundational units should use per-unit branching instead. This creates a **hybrid** strategy where one or more units get their own PR (merged directly to the default branch), while the remaining units merge into the intent branch.
+If the user selected **"Build everything, then open one MR"** (intent strategy), ask whether any foundational units should use per-unit branching instead. This creates a **hybrid** strategy where one or more units get their own PR (merged directly to the default branch), while the remaining units merge into the intent branch.
 
 This is useful when a foundational unit (e.g., database schema, shared library setup) needs to land on `main` before other units can build on it.
 
@@ -810,20 +853,20 @@ Use `AskUserQuestion`:
 ```json
 {
   "questions": [{
-    "question": "Should any foundational units use per-unit branching (own PR to main) while others use the intent branch?",
+    "question": "Should any foundational units be reviewed individually (own PR to main) while others merge into the intent branch?",
     "header": "Hybrid",
     "options": [
-      {"label": "No, all intent branch", "description": "All units merge into the intent branch (standard intent strategy)"},
-      {"label": "Yes, some per-unit", "description": "I'll specify which foundational units should get their own PR"}
+      {"label": "No, build everything into the intent branch", "description": "All units merge into the intent branch (standard intent strategy)"},
+      {"label": "Yes, some reviewed individually", "description": "I'll specify which foundational units should get their own PR"}
     ],
     "multiSelect": false
   }]
 }
 ```
 
-If the user selects "Yes", ask which units should use per-unit branching. Note these units — their `git: { change_strategy: unit }` override will be written into unit frontmatter in Phase 6 Step 3.
+If the user selects "Yes", ask which units should be reviewed individually. Note these units — their `git: { change_strategy: unit }` override will be written into unit frontmatter in Phase 6 Step 3.
 
-**Skip this question entirely if the user selected "Unit branches" or "Trunk-based" in the main strategy question** — per-unit overrides only make sense with the intent branch strategy.
+**Skip this question entirely if the user selected "Review each unit individually" or "Build everything on my default branch"** — per-unit overrides only make sense with the intent branch strategy.
 
 ---
 

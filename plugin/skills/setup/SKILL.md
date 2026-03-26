@@ -255,20 +255,70 @@ For each **confirmed provider**, offer to customize how AI-DLC interacts with it
 
 ## Phase 5: VCS Strategy
 
-Ask the user about their preferred change strategy and auto-merge behavior.
+Ask the user about their preferred delivery strategy, source branch, and auto-merge behavior.
 
 Use `AskUserQuestion`:
 
-**Question 1: Change strategy**
-- "How should AI-DLC organize code changes?"
-- Options:
-  - **Unit branches (Recommended)** — Each unit gets its own branch and MR, reviewed individually. Supports human or agent builders and `/construct <unit-name>` targeting. Best for teams adopting AI-DLC gradually.
-  - **Intent branch** — All units merge into a single intent branch. Agents build autonomously via DAG ordering, one MR reviewed at the end. Best for fully autonomous workflows.
-  - **Trunk** — All work on main branch, no feature branches
+**Question 1: Delivery strategy**
+
+```json
+{
+  "questions": [
+    {
+      "question": "How should completed units be delivered?",
+      "header": "Delivery Strategy",
+      "options": [
+        {
+          "label": "Review each unit individually",
+          "description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged. Best when you want to validate each piece before moving on."
+        },
+        {
+          "label": "Build everything, then open one MR",
+          "description": "Units merge into an intent branch as they complete. Dependent units start automatically once their dependencies are done. One final MR for the whole intent."
+        },
+        {
+          "label": "Build everything on my default branch",
+          "description": "Same as above, but all work happens directly on the default branch. No feature branches, no MR — relies on CI to gate quality."
+        }
+      ],
+      "multiSelect": false
+    }
+  ]
+}
+```
 
 Pre-fill from existing `settings.yml` `{vcs}.change_strategy` if available.
 
-**Question 2: Auto-merge** *(intent strategy only)*
+Map user selections to config values:
+- "Review each unit individually" → `change_strategy: unit`
+- "Build everything, then open one MR" → `change_strategy: intent`
+- "Build everything on my default branch" → `change_strategy: trunk`
+
+**Question 2: Source branch** *(asked for ALL strategies)*
+
+```json
+{
+  "questions": [
+    {
+      "question": "Which branch should units be created from?",
+      "header": "Source Branch",
+      "options": [
+        {
+          "label": "Use the default branch (recommended)",
+          "description": "Create unit/intent branches from the repo's default branch (e.g. main, dev)."
+        },
+        {
+          "label": "Use my current branch",
+          "description": "Create branches from the branch you're currently on."
+        }
+      ],
+      "multiSelect": false
+    }
+  ]
+}
+```
+
+**Question 3: Auto-merge** *(only if user selected "Build everything, then open one MR")*
 - "Should completed unit branches be automatically merged into the intent branch?"
 - Options:
   - **Yes (Recommended)** — Auto-merge when unit passes review
@@ -276,7 +326,7 @@ Pre-fill from existing `settings.yml` `{vcs}.change_strategy` if available.
 
 Pre-fill from existing `settings.yml` `{vcs}.auto_merge` if available.
 
-Only ask auto-merge if strategy is `intent`. For `unit` strategy, merging is the user's responsibility (they merge their own PRs), so skip this question and do not set `auto_merge`. For `trunk`, branches aren't used.
+Only ask auto-merge if strategy is `intent` ("Build everything, then open one MR"). For `unit` ("Review each unit individually"), merging is the user's responsibility (they merge their own PRs), so skip this question and do not set `auto_merge`. For `trunk` ("Build everything on my default branch"), branches aren't used.
 
 ---
 

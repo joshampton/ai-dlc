@@ -225,9 +225,24 @@
 			"properties": {
 				"change_strategy": {
 					"type": "string",
-					"enum": ["trunk", "unit", "intent"],
 					"default": "unit",
-					"description": "How changes are organized:\n- trunk: All work on main branch, no feature branches\n- unit: One branch per unit, each gets its own MR reviewed individually (default)\n- intent: One long-lived branch per intent, agents build autonomously via DAG ordering"
+					"oneOf": [
+						{
+							"const": "unit",
+							"title": "Review each unit individually",
+							"description": "Each unit opens its own PR/MR. Dependent units wait until their dependencies are merged."
+						},
+						{
+							"const": "intent",
+							"title": "Build everything, then open one MR",
+							"description": "Units merge into an intent branch as they complete. One final MR for the whole intent."
+						},
+						{
+							"const": "trunk",
+							"title": "Build everything on default branch",
+							"description": "All work happens directly on the default branch. No feature branches or MRs."
+						}
+					]
 				},
 				"elaboration_review": {
 					"type": "boolean",
