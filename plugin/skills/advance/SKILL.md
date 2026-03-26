@@ -70,6 +70,9 @@ INTENT_DIR=".ai-dlc/${INTENT_SLUG}"
 CURRENT_UNIT=$(echo "$ITERATION_JSON" | han parse json currentUnit -r --default "")
 if [ -n "$CURRENT_UNIT" ] && [ -f "$INTENT_DIR/${CURRENT_UNIT}.md" ]; then
   update_unit_status "$INTENT_DIR/${CURRENT_UNIT}.md" "completed"
+  # Commit the status change so it persists across sessions
+  git add "$INTENT_DIR/${CURRENT_UNIT}.md"
+  git commit -m "status: mark ${CURRENT_UNIT} as completed"
 fi
 ```
 
@@ -208,9 +211,19 @@ SKIP_INTEGRATOR=false
     // See Step 2e below
     return runIntegration();
   }
-  // Integration passed - Mark intent as done
+  // Integration passed or skipped - Mark intent as done
   state.status = "complete";
   // han keep save iteration.json '<updated JSON>'
+```
+
+```bash
+# Update intent.md frontmatter status so it persists in git (not just ephemeral han keep)
+han parse yaml-set status "complete" < "$INTENT_DIR/intent.md" > "$INTENT_DIR/intent.md.tmp" && mv "$INTENT_DIR/intent.md.tmp" "$INTENT_DIR/intent.md"
+git add "$INTENT_DIR/intent.md"
+git commit -m "status: mark intent ${INTENT_SLUG} as complete"
+```
+
+```javascript
   // Output completion summary (see Step 5)
   return completionSummary;
 }
@@ -303,6 +316,12 @@ Task({
 ```bash
 STATE=$(echo "$STATE" | han parse json --set "integratorComplete=true" --set "status=complete")
 han keep save iteration.json "$STATE"
+
+# Update intent.md frontmatter status so it persists in git (not just ephemeral han keep)
+han parse yaml-set status "complete" < "$INTENT_DIR/intent.md" > "$INTENT_DIR/intent.md.tmp" && mv "$INTENT_DIR/intent.md.tmp" "$INTENT_DIR/intent.md"
+git add "$INTENT_DIR/intent.md"
+git commit -m "status: mark intent ${INTENT_SLUG} as complete"
+
 # Proceed to Step 5 (completion summary)
 ```
 

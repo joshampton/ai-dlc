@@ -435,6 +435,9 @@ fi
 
 ```bash
 update_unit_status "$UNIT_FILE" "in_progress"
+# Commit the status change so it persists across sessions
+git add "$UNIT_FILE"
+git commit -m "status: mark $(basename "$UNIT_FILE" .md) as in_progress"
 ```
 
 3. **Resolve per-unit workflow** — read the unit's `workflow:` frontmatter field. If present, resolve it to a hat sequence. If absent, fall back to the intent-level workflow:
@@ -635,7 +638,12 @@ Task({
 
 **If no next hat** (last hat in workflow -- unit complete):
 
-a. Mark unit as completed: `update_unit_status "$UNIT_FILE" "completed"`
+a. Mark unit as completed and commit:
+```bash
+update_unit_status "$UNIT_FILE" "completed"
+git add "$UNIT_FILE"
+git commit -m "status: mark $(basename "$UNIT_FILE" .md) as completed"
+```
 b. Remove unit from `unitStates`
 c. Merge or PR based on effective change strategy:
 
@@ -1059,6 +1067,9 @@ source "${CLAUDE_PLUGIN_ROOT}/lib/dag.sh"
 # Update unit status to in_progress in the intent worktree
 # UNIT_FILE points to the file in .ai-dlc/{intent-slug}/
 update_unit_status "$UNIT_FILE" "in_progress"
+# Commit the status change so it persists across sessions
+git add "$UNIT_FILE"
+git commit -m "status: mark $(basename "$UNIT_FILE" .md) as in_progress"
 ```
 
 **Track current unit in iteration state** so `/advance` knows which unit to mark completed:
