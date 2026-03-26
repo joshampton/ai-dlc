@@ -185,7 +185,115 @@ Then proceed to Phase 1.
 
 ---
 
+## Phase 0.5: Detect Iteration Intent (`iterates_on`)
+
+> **CALLOUT:** If the intent being elaborated has an `iterates_on` field in its frontmatter, it is an **iteration intent** — a follow-up that builds on a previous intent. This changes how several subsequent phases behave. The agent MUST check for this field early and carry the prior context through the entire elaboration.
+
+If elaborating an existing intent (slug provided), check its frontmatter for `iterates_on`:
+
+```bash
+INTENT_SLUG="{slug}"
+
+# Check if intent.md exists and has iterates_on
+if [ -f ".ai-dlc/${INTENT_SLUG}/intent.md" ]; then
+  ITERATES_ON=$(han parse yaml iterates_on -r --default "" < ".ai-dlc/${INTENT_SLUG}/intent.md")
+fi
+```
+
+If `ITERATES_ON` is non-empty, this is an iteration intent. Load the previous intent's full context:
+
+**Load from filesystem first, then fall back to git branch:**
+
+```bash
+PREVIOUS_SLUG="$ITERATES_ON"
+
+# Try filesystem
+if [ -f ".ai-dlc/${PREVIOUS_SLUG}/intent.md" ]; then
+  PREVIOUS_INTENT=$(cat ".ai-dlc/${PREVIOUS_SLUG}/intent.md")
+  PREVIOUS_SOURCE="filesystem"
+else
+  # Fallback: read from intent branch
+  PREVIOUS_INTENT=$(git show "ai-dlc/${PREVIOUS_SLUG}/main:.ai-dlc/${PREVIOUS_SLUG}/intent.md" 2>/dev/null)
+  PREVIOUS_SOURCE="git-branch"
+fi
+
+# Load previous units
+if [ "$PREVIOUS_SOURCE" = "filesystem" ]; then
+  PREVIOUS_UNITS=""
+  for unit_file in .ai-dlc/${PREVIOUS_SLUG}/unit-*.md; do
+    [ -f "$unit_file" ] && PREVIOUS_UNITS="${PREVIOUS_UNITS}$(cat "$unit_file")\n---\n"
+  done
+else
+  PREVIOUS_UNITS=""
+  git ls-tree --name-only "ai-dlc/${PREVIOUS_SLUG}/main" ".ai-dlc/${PREVIOUS_SLUG}/" 2>/dev/null | \
+    grep 'unit-' | while read -r f; do
+      git show "ai-dlc/${PREVIOUS_SLUG}/main:$f" 2>/dev/null
+    done
+fi
+
+# Load previous discovery.md if available
+if [ "$PREVIOUS_SOURCE" = "filesystem" ]; then
+  PREVIOUS_DISCOVERY=$(cat ".ai-dlc/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
+else
+  PREVIOUS_DISCOVERY=$(git show "ai-dlc/${PREVIOUS_SLUG}/main:.ai-dlc/${PREVIOUS_SLUG}/discovery.md" 2>/dev/null)
+fi
+```
+
+**Present prior context to the user:**
+
+```markdown
+## Iteration Context
+
+This intent iterates on **{previous title}** (`{previous-slug}`).
+
+### What was built previously
+{Summary of previous intent's problem, solution, and domain model}
+
+### Previous Units
+| Unit | Status | Description |
+|------|--------|-------------|
+| {unit-slug} | {status} | {brief description} |
+...
+
+### Previous Domain Knowledge
+{Key findings from discovery.md if available}
+```
+
+**Store this context** — it will be referenced in Phase 2, Phase 2.5, and Phase 5. Use `han keep save` to persist:
+
+```bash
+han keep save previous-intent-context "{JSON summary of previous intent}"
+```
+
+**When `iterates_on` is set, the following phases are modified:**
+- **Phase 1**: Skip the "What do you want to build?" question — the intent scaffold already has a Problem/Solution from `/followup`. Instead, present the existing description and ask if the user wants to refine it.
+- **Phase 2**: Use previous intent context to ask more targeted clarifying questions. Focus on what's *different* from the previous intent, not re-establishing the full domain.
+- **Phase 2.5**: Shorten or skip domain discovery — the previous intent already explored the domain. Focus discovery on *new* areas or changes only.
+- **Phase 5**: Reference previous units to understand what exists. Suggest units that modify, extend, or fix what was previously built.
+
+---
+
 ## Phase 1: Gather Intent
+
+**If `iterates_on` is set:** The intent was created by `/followup` and already has a Problem/Solution section. Present the existing description to the user and ask if they want to refine it:
+
+```json
+{
+  "questions": [{
+    "question": "Here's the follow-up description from the intent scaffold. Does this capture what you need, or would you like to refine it?",
+    "header": "Follow-up Description",
+    "options": [
+      {"label": "Looks good", "description": "Proceed with this description"},
+      {"label": "Refine it", "description": "I want to adjust the problem or solution statement"}
+    ],
+    "multiSelect": false
+  }]
+}
+```
+
+If they choose "Refine it", engage in dialogue to update the Problem/Solution sections. If "Looks good", proceed to Phase 2.
+
+**If `iterates_on` is NOT set (normal flow):**
 
 Ask the user: "What do you want to build or accomplish?"
 
@@ -204,6 +312,8 @@ Use discovered context to inform your clarification questions in Phase 2.
 Use `AskUserQuestion` to explore the user's intent. Ask 2-4 questions at a time, each with 2-4 options.
 
 CRITICAL: Do NOT list questions as plain text. Always use the `AskUserQuestion` tool.
+
+> **Iteration intents (`iterates_on` set):** When elaborating an iteration intent, you already have the previous intent's domain model, units, and decisions as context. Focus clarifying questions on what's **different or new** in this follow-up — do not re-establish the full domain from scratch. Ask about: what specifically changed, which parts of the previous implementation are affected, any new constraints or requirements that didn't exist before, and whether the previous domain model needs updates.
 
 Focus your questions on understanding:
 - What **specific problem** this solves (not just "build X" but "build X because Y")
@@ -308,6 +418,13 @@ This ensures:
 ## Phase 2.5: Domain Discovery & Technical Exploration (Delegated)
 
 **This phase is mandatory.** Domain discovery runs in a forked subagent to keep the main context lean. The subagent performs deep technical exploration autonomously, writing all findings to `discovery.md` on disk.
+
+> **Iteration intents (`iterates_on` set):** When this intent iterates on a previous one, domain discovery should be **shortened, not skipped**. The previous intent already explored the domain — include the previous intent's `discovery.md` content in the discovery brief so the subagent can use it as a starting point. The subagent should focus on:
+> - **New areas** introduced by the follow-up that weren't covered before
+> - **Changes** to existing code/systems made by the previous intent (the codebase has evolved since the original discovery)
+> - **Affected components** — which parts of what was built need modification
+>
+> Include the previous intent's discovery findings and unit specs in the discovery brief (Step 2) under a `## Previous Intent Context` section so the subagent has full context.
 
 ### Step 1: Load provider config
 
@@ -598,6 +715,13 @@ Decompose the intent into **Units** — independent pieces of work. This is NOT 
 - **Multiple units**: The intent spans multiple concerns, systems, layers, or deliverables. Decompose into 2-5 units.
 
 Do NOT ask the user whether to decompose. Assess the complexity from the domain model, success criteria, and data sources — then decompose accordingly.
+
+> **Iteration intents (`iterates_on` set):** When decomposing an iteration intent, reference the previous intent's units to understand what already exists in the codebase. Use this context to:
+> - **Identify which previous units are affected** by the follow-up work and note them in the new unit specs
+> - **Suggest units that modify or extend** specific previous units rather than starting from scratch
+> - **Auto-populate `context` references** in unit descriptions pointing to previous unit files (e.g., "See `{previous-slug}/unit-02-auth-middleware` for the existing implementation")
+> - **Avoid duplicating work** — if a previous unit already handles a concern, the new unit should describe how it *changes* that work, not rebuild it
+> - **Carry forward domain knowledge** — reference the previous intent's domain model and data sources rather than re-describing them
 
 **Hard rules for unit boundaries:**
 
@@ -921,6 +1045,7 @@ git:
 announcements: []  # e.g., [changelog, release-notes, social-posts, blog-draft]
 passes: []  # Optional: [design, product, dev] — omit or leave empty for single-pass (default dev)
 active_pass: ""  # Current pass being worked on (auto-managed by construct)
+iterates_on: ""  # Slug of the previous intent this iterates on (set by /followup, leave empty for new intents)
 created: {ISO date}
 status: active
 epic: ""  # Ticketing provider epic key (auto-populated if ticketing provider configured)
