@@ -619,6 +619,8 @@ Do NOT ask the user whether to decompose. Assess the complexity from the domain 
 
 Set the `workflow:` frontmatter field on units that need a non-default workflow. Omit it (or leave empty) for units that should use the intent-level workflow.
 
+**Auto-routing rule:** When generating a unit with `discipline: design`, automatically set `workflow: design` in the frontmatter. Do not require the user to specify this manually. This ensures design units always route through the design workflow (`planner → designer → reviewer`) instead of accidentally inheriting the intent-level workflow.
+
 Define each unit with **enough detail that a builder with zero prior context builds the right thing**:
 
 - **Name and description**: What this unit accomplishes, stated in terms of the domain model
@@ -981,7 +983,7 @@ depends_on: []
 branch: ai-dlc/{intent-slug}/NN-{unit-slug}
 discipline: {discipline}  # frontend, backend, api, documentation, devops, design, etc.
 pass: ""  # Which pass this unit belongs to (design, product, dev) — empty for single-pass intents
-workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow)
+workflow: ""  # Per-unit workflow override (optional — omit or leave empty to use intent-level workflow). Auto-set to "design" when discipline is "design".
 ticket: ""  # Ticketing provider ticket key (auto-populated if ticketing provider configured)
 # git:                         # Optional: per-unit VCS override (only include when unit has an override)
 #   change_strategy: ""        # Overrides intent-level strategy for this unit (e.g., "unit" for foundational units)
