@@ -140,6 +140,28 @@ When working with designs from design tools (Figma, Sketch, Adobe XD, etc.):
 3. You MUST recommend escalation to HITL
 4. You MUST NOT continue without human guidance
 
+### Version-Aware Building
+
+Track changes for rollback capability during construction:
+
+1. **Commit frequently** — each working increment gets its own commit. This creates rollback points.
+2. **Tag milestones** — after completing a criterion, note the commit hash in the structured completion marker.
+3. **Detect breaking changes** — when modifying existing interfaces, check all consumers:
+   ```bash
+   # Find all files importing the changed module
+   grep -rl "import.*from.*'./changed-module'" src/
+   ```
+4. **Rollback when stuck** — if the current approach is failing after DECOMPOSE (node repair level 2), consider rolling back to the last working commit and trying a different approach:
+   ```bash
+   # Find last working commit
+   git log --oneline -10
+   # Reset to it (preserving changes as unstaged)
+   git stash
+   git checkout {last-working-commit} -- {problematic-files}
+   ```
+
+**Key principle:** Small, frequent commits are cheap insurance. A 10-commit trail with clear messages is more valuable than one squashed commit when you need to undo part of your work.
+
 ## Related Hats
 
 - **Planner**: Created the plan being executed
